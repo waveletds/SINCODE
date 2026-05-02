@@ -19,7 +19,7 @@ interface PaymentOptions {
   onClose: (response: any) => void;
 }
 
-export const initializePayment = ({
+export const initializePayment = async ({
   amount,
   customerName,
   customerEmail,
@@ -28,12 +28,26 @@ export const initializePayment = ({
   onComplete,
   onClose,
 }: PaymentOptions) => {
-  if (!window.MonnifySDK) {
-    console.error("Monnify SDK not loaded");
-    return;
-  }
+  const loadSDK = () => {
+    return new Promise((resolve, reject) => {
+      if (window.MonnifySDK) {
+        resolve(window.MonnifySDK);
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://sdk.monnify.com/plugin/monnify.js";
+      script.async = true;
+      script.onload = () => resolve(window.MonnifySDK);
+      script.onerror = () => reject(new Error("Failed to load Monnify SDK"));
+      document.head.appendChild(script);
+    });
+  };
 
-  window.MonnifySDK.initialize({
+  try {
+    const sdk = await loadSDK();
+    if (!sdk) throw new Error("SDK loaded but not initialized");
+
+    window.MonnifySDK.initialize({
     amount,
     currencyCode: "NGN",
     customerName,
@@ -51,4 +65,8 @@ export const initializePayment = ({
       onClose(data);
     }
   });
+  } catch (error) {
+    console.error("Monnify Error:", error);
+    // Prefer showing a UI message instead of alert
+  }
 };

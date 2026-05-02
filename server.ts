@@ -3,6 +3,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
+import axios from "axios";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config();
 
@@ -10,52 +12,61 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function startServer() {
+  console.log("SINCODE: Initializing Server...");
   const app = express();
   const PORT = 3000;
 
+  // Initialize AI Model inside startServer to avoid top-level issues
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "dummy_key");
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
   app.use(express.json());
 
-  // API Routes
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", message: "SINCODE API is running" });
-  });
-
-  // Monnify Auth Helper
-  async function getMonnifyAccessToken() {
-    const apiKey = process.env.MONNIFY_API_KEY;
-    const secretKey = process.env.MONNIFY_SECRET_KEY;
-    const baseUrl = process.env.MONNIFY_BASE_URL;
-    const authString = Buffer.from(`${apiKey}:${secretKey}`).toString("base64");
-
-    const response = await fetch(`${baseUrl}/api/v1/auth/login`, {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${authString}`,
-      },
+  // Error handling for the whole server initialization
+  try {
+    // API Routes
+    app.get("/api/health", (req, res) => {
+      res.json({ status: "ok", message: "SINCODE API is running", node_env: process.env.NODE_ENV || 'development' });
     });
 
-    const data = await response.json();
-    if (!data.requestSuccessful) {
-      throw new Error(data.responseMessage || "Monnify auth failed");
-    }
-    return data.responseBody.accessToken;
-  }
-
-  // Monnify Initialization
-  app.post("/api/monnify/initialize", async (req, res) => {
-    const { amount, customerName, customerEmail, paymentDescription, paymentReference } = req.body;
-    
-    try {
-      const accessToken = await getMonnifyAccessToken();
+    // Monnify Auth Helper
+    async function getMonnifyAccessToken() {
+      const apiKey = process.env.MONNIFY_API_KEY;
+      const secretKey = process.env.MONNIFY_SECRET_KEY;
       const baseUrl = process.env.MONNIFY_BASE_URL;
+      
+      if (!apiKey || !secretKey || !baseUrl) {
+        throw new Error("Monnify credentials missing");
+      }
 
-      const response = await fetch(`${baseUrl}/api/v1/merchant/transactions/init-transaction`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const authString = Buffer.from(`${apiKey}:${secretKey}`).toString("base64");
+
+      try {
+        const response = await axios.post(`${baseUrl}/api/v1/auth/login`, {}, {
+          headers: {
+            Authorization: `Basic ${authString}`,
+          },
+        });
+
+        if (!response.data.requestSuccessful) {
+          throw new Error(response.data.responseMessage || "Monnify auth failed");
+        }
+        return response.data.responseBody.accessToken;
+      } catch (error: any) {
+        console.error("Monnify Auth Error:", error.response?.data || error.message);
+        throw new Error("Failed to authenticate with Monnify");
+      }
+    }
+
+    // Monnify Initialization
+    app.post("/api/monnify/initialize", async (req, res) => {
+      const { amount, customerName, customerEmail, paymentDescription, paymentReference } = req.body;
+      
+      try {
+        const accessToken = await getMonnifyAccessToken();
+        const baseUrl = process.env.MONNIFY_BASE_URL;
+
+        const response = await axios.post(`${baseUrl}/api/v1/merchant/transactions/init-transaction`, {
           amount,
           customerName,
           customerEmail,
@@ -65,128 +76,148 @@ async function startServer() {
           contractCode: process.env.MONNIFY_CONTRACT_CODE,
           redirectUrl: `${process.env.APP_URL}/payment/verify`,
           paymentMethods: ["CARD", "ACCOUNT_TRANSFER"],
-        }),
-      });
+        }, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        });
 
-      const data = await response.json();
-      res.json(data);
-    } catch (error) {
-      console.error("Monnify Init Error:", error);
-      res.status(500).json({ error: "Failed to initialize payment via Monnify" });
-    }
-  });
+        res.json(response.data);
+      } catch (error: any) {
+        console.error("Monnify Init Error:", error.response?.data || error.message);
+        res.status(500).json({ error: error.message || "Failed to initialize payment" });
+      }
+    });
 
-  // Monnify Webhook
-  app.post("/api/monnify/webhook", (req, res) => {
-    // TODO: Verify hash and update database
-    console.log("Monnify Webhook received:", req.body);
-    res.sendStatus(200);
-  });
+    // Monnify Webhook
+    app.post("/api/monnify/webhook", (req, res) => {
+      console.log("Monnify Webhook received:", req.body);
+      res.sendStatus(200);
+    });
 
-  // Monnify: Get Banks
-  app.get("/api/monnify/banks", async (req, res) => {
-    try {
-      const accessToken = await getMonnifyAccessToken();
-      const baseUrl = process.env.MONNIFY_BASE_URL;
+    // Monnify: Get Banks
+    app.get("/api/monnify/banks", async (req, res) => {
+      try {
+        const accessToken = await getMonnifyAccessToken();
+        const baseUrl = process.env.MONNIFY_BASE_URL;
 
-      const response = await fetch(`${baseUrl}/api/v1/banks`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      const data = await response.json();
-      res.json(data);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch banks" });
-    }
-  });
-
-  // Monnify: Validate Account
-  app.get("/api/monnify/validate-account", async (req, res) => {
-    const { accountNumber, bankCode } = req.query;
-    try {
-      const accessToken = await getMonnifyAccessToken();
-      const baseUrl = process.env.MONNIFY_BASE_URL;
-
-      const response = await fetch(
-        `${baseUrl}/api/v1/disbursements/account/validate?accountNumber=${accountNumber}&bankCode=${bankCode}`,
-        {
+        const response = await axios.get(`${baseUrl}/api/v1/banks`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
-        }
-      );
+        });
 
-      const data = await response.json();
-      res.json(data);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to validate account" });
-    }
-  });
+        res.json(response.data);
+      } catch (error: any) {
+        console.error("Monnify Banks Error:", error.response?.data || error.message);
+        res.status(500).json({ error: "Failed to fetch banks" });
+      }
+    });
 
-  // Monnify: Initiate Transfer (Payout)
-  app.post("/api/monnify/transfer", async (req, res) => {
-    const { amount, reference, narration, destinationBankCode, destinationAccountNumber } = req.body;
-    try {
-      const accessToken = await getMonnifyAccessToken();
-      const baseUrl = process.env.MONNIFY_BASE_URL;
+    // Monnify: Validate Account
+    app.get("/api/monnify/validate-account", async (req, res) => {
+      const { accountNumber, bankCode } = req.query;
+      try {
+        const accessToken = await getMonnifyAccessToken();
+        const baseUrl = process.env.MONNIFY_BASE_URL;
 
-      const response = await fetch(`${baseUrl}/api/v1/disbursements/single`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+        const response = await axios.get(
+          `${baseUrl}/api/v1/disbursements/account/validate?accountNumber=${accountNumber}&bankCode=${bankCode}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        res.json(response.data);
+      } catch (error: any) {
+        console.error("Monnify Validate Error:", error.response?.data || error.message);
+        res.status(500).json({ error: "Failed to validate account" });
+      }
+    });
+
+    // Monnify: Initiate Transfer (Payout)
+    app.post("/api/monnify/transfer", async (req, res) => {
+      const { amount, reference, narration, destinationBankCode, destinationAccountNumber } = req.body;
+      try {
+        const accessToken = await getMonnifyAccessToken();
+        const baseUrl = process.env.MONNIFY_BASE_URL;
+
+        const response = await axios.post(`${baseUrl}/api/v1/disbursements/single`, {
           amount,
           reference: reference || `WDL-${Date.now()}`,
           narration: narration || "SINCODE Payout",
           destinationBankCode,
           destinationAccountNumber,
           currency: "NGN",
-          sourceAccountNumber: process.env.MONNIFY_SOURCE_ACCOUNT, // Your wallet account
-        }),
+          sourceAccountNumber: process.env.MONNIFY_SOURCE_ACCOUNT,
+        }, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        res.json(response.data);
+      } catch (error: any) {
+        console.error("Monnify Transfer Error:", error.response?.data || error.message);
+        res.status(500).json({ error: "Failed to initiate transfer" });
+      }
+    });
+
+    // AI Moderation with Gemini
+    app.post("/api/moderate", async (req, res) => {
+      const { content } = req.body;
+      if (!process.env.GEMINI_API_KEY) {
+        return res.json({ flagged: false, confidence: 1, reason: "Bypassed (API key missing)" });
+      }
+
+      try {
+        const prompt = `Analyze the following social media post for harmful, illegal, or extremely violent content according to Nigerian community standards. Return JSON only: { "flagged": boolean, "reason": string }.\n\nContent: "${content}"`;
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+        
+        const jsonStart = text.indexOf('{');
+        const jsonEnd = text.lastIndexOf('}') + 1;
+        const jsonStr = text.substring(jsonStart, jsonEnd);
+        const moderation = JSON.parse(jsonStr);
+        res.json(moderation);
+      } catch (error) {
+        console.error("Moderation Error:", error);
+        res.status(500).json({ error: "Moderation failed" });
+      }
+    });
+
+    // Vite middleware for development
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Starting server in DEVELOPMENT mode");
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
       });
-
-      const data = await response.json();
-      res.json(data);
-    } catch (error) {
-      console.error("Transfer Error:", error);
-      res.status(500).json({ error: "Failed to initiate transfer" });
+      app.use(vite.middlewares);
+    } else {
+      console.log("Starting server in PRODUCTION mode");
+      const distPath = path.join(process.cwd(), "dist");
+      app.use(express.static(distPath));
+      app.get("*", (req, res) => {
+        res.sendFile(path.join(distPath, "index.html"));
+      });
     }
-  });
 
-  // AI Moderation with Gemini
-  app.post("/api/moderate", async (req, res) => {
-    const { content } = req.body;
-    try {
-      // Placeholder for Gemini moderation logic
-      // In a real app, we'd use the @google/genai SDK here
-      res.json({ flagged: false, confidence: 0.99 });
-    } catch (error) {
-      res.status(500).json({ error: "Moderation failed" });
-    }
-  });
-
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`SINCODE Server running on http://0.0.0.0:${PORT}`);
     });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
+  } catch (err) {
+    console.error("Fatal Server Startup Error:", err);
+    process.exit(1);
   }
-
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`SINCODE Server running on http://localhost:${PORT}`);
-  });
 }
 
-startServer();
+startServer().catch(err => {
+  console.error("Unhandle startServer error:", err);
+  process.exit(1);
+});

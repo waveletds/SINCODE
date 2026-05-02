@@ -44,9 +44,10 @@ import { initializePayment } from '@/src/lib/monnify';
 const Navbar = ({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: (t: string) => void }) => {
   const tabs = [
     { id: 'home', icon: Home, label: 'Home' },
-    { id: 'discover', icon: Search, label: 'Search' },
-    { id: 'messages', icon: MessageCircle, label: 'Messages' },
-    { id: 'profile', icon: Bell, label: 'Alerts' },
+    { id: 'discover', icon: Search, label: 'Explore' },
+    { id: 'create', icon: PlusSquare, label: 'Post' },
+    { id: 'messages', icon: MessageCircle, label: 'Chats' },
+    { id: 'profile', icon: UserCircle, label: 'Profile' },
   ];
 
   return (
@@ -74,13 +75,13 @@ const Navbar = ({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: 
   );
 };
 
-const Header = ({ onOpenMenu }: { onOpenMenu: () => void }) => {
+const Header = ({ onOpenMenu, user }: { onOpenMenu: () => void, user: any }) => {
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-3">
         <button onClick={onOpenMenu} className="relative active:scale-95 transition-transform">
           <div className="w-10 h-10 rounded-full border border-slate-200 p-0.5">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde" className="w-full h-full rounded-full bg-slate-100" alt="User" />
+            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Tunde'}`} className="w-full h-full rounded-full bg-slate-100" alt="User" />
           </div>
           <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
         </button>
@@ -119,7 +120,7 @@ const FeedPage = () => {
       paymentReference: `SC-${Date.now()}`,
       paymentDescription: description,
       onComplete: (res: any) => {
-        alert(`Payment successful! Reference: ${res.transactionReference}`);
+        console.log(`Payment successful! Reference: ${res.transactionReference}`);
       },
       onClose: () => {
         console.log("Payment window closed");
@@ -196,22 +197,22 @@ const FeedPage = () => {
 
       {/* Feed Posts */}
       <section className="space-y-0">
-        {[1].map((post) => (
+        {[1, 2, 3].map((post) => (
           <div key={post} className="bg-white border-b border-slate-100 py-6 space-y-4">
             {/* Post Header */}
             <div className="px-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-100">
-                   <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=juice" className="w-full h-full object-cover bg-pink-100" alt="Avatar" />
+                   <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${post === 1 ? 'juice' : post === 2 ? 'angel' : 'model'}`} className="w-full h-full object-cover bg-slate-100" alt="Avatar" />
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <h3 className="text-sm font-bold text-slate-900">TheLittleJui...</h3>
+                    <h3 className="text-sm font-bold text-slate-900">{post === 1 ? 'TheLittleJui...' : post === 2 ? 'Tems Angel' : 'Lagos Model'}</h3>
                     <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                        <ShieldCheck size={10} className="text-white" strokeWidth={3} />
                     </div>
                   </div>
-                  <p className="text-xs text-slate-500">@Thelittlejui... • 6h</p>
+                  <p className="text-xs text-slate-500">@{post === 1 ? 'thelittlejui...' : post === 2 ? 'tems_vibes' : 'ekofinesse'} • {post * 2}h</p>
                 </div>
               </div>
               <button className="text-slate-400 p-2">
@@ -222,15 +223,25 @@ const FeedPage = () => {
             {/* Post Content */}
             <div className="px-4 space-y-4">
                <p className="text-sm text-slate-700 leading-relaxed">
-                 Squirted again... This time it shot so far My pussy kept twitching and gushing nonstop, I couldn't stop cumming at all~ 💖💕🐳🐳🐳 #squirting #squirter #bigsquirt #pussysquirt #femalesquirt
+                 {post === 1 
+                   ? "Squirted again... This time it shot so far My pussy kept twitching and gushing nonstop, I couldn't stop cumming at all~ 💖💕🐳🐳🐳 #squirting" 
+                   : post === 2 
+                   ? "Lagos Fashion Week was a blast! 🇳🇬 Can't wait to show you all the behind the scenes movements. Stay tuned for the exclusive drop. ✨"
+                   : "Early morning sessions at the studio. 📸 New content arriving shortly. Subscribe to get early access to the vault! #StudioVibes"}
                </p>
                
                <div className="relative aspect-video rounded-xl overflow-hidden group bg-slate-200">
-                 <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80" className="w-full h-full object-cover blur-3xl opacity-60 absolute scale-125" alt="Teaser" />
-                 <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
+                 <img src={post === 1 ? "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80" : post === 2 ? "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80" : "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80"} className="w-full h-full object-cover blur-3xl opacity-60 absolute scale-125" alt="Teaser" />
+                 <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-black/5">
                     <div className="w-14 h-14 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white mb-3">
                        <EyeOff size={28} />
                     </div>
+                    <button 
+                      onClick={() => handlePayment(2500, "Unlock Content")}
+                      className="bg-blue-600 text-white font-bold py-2.5 px-6 rounded-full text-xs uppercase tracking-widest shadow-lg shadow-blue-600/20 active:scale-95 transition-all"
+                    >
+                      Unlock for $5
+                    </button>
                  </div>
                </div>
             </div>
@@ -238,17 +249,16 @@ const FeedPage = () => {
             {/* Post Bottom Bar */}
             <div className="px-4 pt-2 flex items-center justify-between">
                <div className="flex items-center gap-6 text-slate-400">
-                  <div className="flex items-center gap-1.5 p-1">
-                     <Home size={22} className="text-blue-500" />
+                  <div className="flex items-center gap-1.5 p-1 hover:text-blue-500 transition-colors cursor-pointer">
+                     <Heart size={22} />
+                     <span className="text-xs font-bold">{post * 42}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 p-1">
-                     <Search size={22} />
-                  </div>
-                  <div className="flex items-center gap-1.5 p-1">
+                  <div className="flex items-center gap-1.5 p-1 hover:text-blue-500 transition-colors cursor-pointer">
                      <MessageCircle size={22} />
+                     <span className="text-xs font-bold">{post * 12}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 p-1">
-                     <Bell size={22} />
+                  <div className="flex items-center gap-1.5 p-1 hover:text-blue-500 transition-colors cursor-pointer">
+                     <Bookmark size={22} />
                   </div>
                </div>
             </div>
@@ -259,10 +269,131 @@ const FeedPage = () => {
   );
 };
 
-const AuthPage = ({ onLogin }: { onLogin: () => void }) => {
+const NIGERIAN_STATES = [
+  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT - Abuja', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'
+];
+
+const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
   const [isSigningUp, setIsSigningUp] = useState(false);
+  const [isForgotPass, setIsForgotPass] = useState(false);
   const [gender, setGender] = useState('');
+  const [state, setState] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   
+  // Sign up fields
+  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [dob, setDob] = useState('');
+  const [password, setPassword] = useState('');
+
+  // Login fields
+  const [loginId, setLoginId] = useState(''); // Email (Supabase requires email for default auth)
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // Recovery fields
+  const [recoveryId, setRecoveryId] = useState('');
+
+  const handleSignUp = async () => {
+    if (!name || !username || !email || !password || !state) {
+      setError('Please fill all required fields');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError('');
+
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name,
+          username: username.startsWith('@') ? username : `@${username}`,
+          phone,
+          dob,
+          gender,
+          state,
+          location: `${state}, Nigeria`
+        }
+      }
+    });
+
+    setIsLoading(false);
+
+    if (signUpError) {
+      setError(signUpError.message);
+    } else if (data.user) {
+      setSuccess('Account created! Please check your email for verification.');
+      setIsSigningUp(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!loginId || !loginPassword) {
+      setError('Please enter your credentials');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError('');
+
+    let emailToUse = loginId;
+
+    // If loginId doesn't look like an email, try to find the profile to get the email
+    if (!loginId.includes('@') || loginId.startsWith('@')) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email')
+        .or(`username.eq.${loginId},phone.eq.${loginId},username.eq.@${loginId}`)
+        .maybeSingle();
+      
+      if (profile && profile.email) {
+        emailToUse = profile.email;
+      }
+    }
+
+    // Since profiles doesn't currently store email (for security/privacy), 
+    // the standard way is to use email for Auth.
+    // However, I will update the trigger to store a obscured/safe email or just let the user know.
+    // FOR NOW: I will update the profiles table to include email so we can map identity -> email.
+    
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      email: emailToUse,
+      password: loginPassword,
+    });
+
+    setIsLoading(false);
+
+    if (signInError) {
+      setError('Invalid credentials or non-registered user');
+    }
+  };
+
+  const handleRecovery = async () => {
+    if (!recoveryId) {
+       setError('Please enter your email');
+       return;
+    }
+    setIsLoading(true);
+    setError('');
+
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(recoveryId, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    setIsLoading(false);
+
+    if (resetError) {
+      setError(resetError.message);
+    } else {
+      setSuccess('Recovery link sent to your email.');
+    }
+  };
+
   const teasers = [
     { id: 1, image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80', active: true, title: 'BTS: Lagos Fashion Week' },
     { id: 2, image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80', active: false, title: 'Private Studio Session' },
@@ -274,13 +405,13 @@ const AuthPage = ({ onLogin }: { onLogin: () => void }) => {
        {/* Top Section: Branding & Logo */}
        <div className={cn(
          "bg-navy-900 px-8 relative overflow-hidden flex flex-col items-center transition-all duration-500",
-         isSigningUp ? "pt-8 pb-8" : "pt-12 pb-16"
+         isSigningUp || isForgotPass ? "pt-6 pb-6" : "pt-12 pb-16"
        )}>
           <div className="absolute top-0 inset-x-0 h-full bg-linear-to-b from-blue-600/5 to-transparent"></div>
           
           <div className="relative z-10 flex flex-col items-center">
              <div className="relative mb-6">
-                <Heart size={isSigningUp ? 60 : 80} className="text-white fill-white transition-all" strokeWidth={1} />
+                <Heart size={isSigningUp || isForgotPass ? 40 : 80} className="text-white fill-white transition-all" strokeWidth={1} />
                 <div className="absolute inset-0 flex items-center justify-center">
                    <div className="w-8 h-8 rounded-full bg-navy-900 flex items-center justify-center">
                       <Eye size={18} className="text-blue-400" strokeWidth={3} />
@@ -291,8 +422,8 @@ const AuthPage = ({ onLogin }: { onLogin: () => void }) => {
              <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.4em]">Elite Nigerian Creator Hub</p>
           </div>
 
-          {/* Featured Teasers Grid - Hide or shrink when signing up */}
-          {!isSigningUp && (
+          {/* Featured Teasers Grid - Hide or shrink when signing up or forgot password */}
+          {(!isSigningUp && !isForgotPass) && (
             <div className="grid grid-cols-3 gap-3 w-full max-w-lg mt-12 relative z-20">
                {teasers.map((t, i) => (
                   <div key={t.id} className={cn(
@@ -326,41 +457,77 @@ const AuthPage = ({ onLogin }: { onLogin: () => void }) => {
        {/* Bottom Section: Actions */}
        <div className={cn(
          "flex-1 bg-black p-8 flex flex-col items-center rounded-t-[3rem] -mt-10 relative z-30 shadow-[0_-20px_40px_rgba(0,0,0,0.8)] border-t border-white/5 overflow-y-auto scrollbar-hide",
-         isSigningUp ? "justify-start" : "justify-center"
+         isSigningUp || isForgotPass ? "justify-start" : "justify-center"
        )}>
+          {error && <div className="w-full max-w-sm mb-4 px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold rounded-xl text-center">{error}</div>}
+          {success && <div className="w-full max-w-sm mb-4 px-4 py-3 bg-green-500/10 border border-green-500/20 text-green-500 text-xs font-bold rounded-xl text-center">{success}</div>}
+          
           <div className="w-full max-w-sm space-y-4">
-             {isSigningUp ? (
-                <div className="space-y-4 py-4">
+             {isForgotPass ? (
+                <div className="space-y-6 py-4">
+                   <div className="space-y-2">
+                     <h3 className="text-white font-bold text-lg">Recover Account</h3>
+                     <p className="text-slate-500 text-xs">Enter your email, username or phone number to recover your password.</p>
+                   </div>
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Identity Information</label>
+                      <input value={recoveryId} onChange={e => setRecoveryId(e.target.value)} type="text" placeholder="Email, Username or Phone" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
+                   </div>
+                   
+                   <button 
+                      onClick={handleRecovery}
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-2xl shadow-2xl shadow-blue-600/20 active:scale-95 transition-all text-sm uppercase tracking-widest mt-4"
+                   >
+                      Recover Password
+                   </button>
+                   
+                   <button 
+                      onClick={() => {
+                        setIsForgotPass(false);
+                        setSuccess('');
+                        setError('');
+                      }}
+                      className="w-full text-slate-500 font-black py-2 text-[10px] uppercase tracking-widest hover:text-white transition-colors"
+                   >
+                      Back to Login
+                   </button>
+                </div>
+             ) : isSigningUp ? (
+                <div className="space-y-4 pb-12">
                    <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Full Name</label>
-                      <input type="text" placeholder="e.g. Tunde Olamide" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
+                      <input value={name} onChange={e => setName(e.target.value)} type="text" placeholder="e.g. Tunde Olamide" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
                    </div>
                    <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Username</label>
-                      <input type="text" placeholder="@tunde_vibes" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
+                      <input value={username} onChange={e => setUsername(e.target.value)} type="text" placeholder="@tunde_vibes" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
                    </div>
                    <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Email Address</label>
-                      <input type="email" placeholder="tunde@example.com" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
+                      <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="tunde@example.com" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
+                   </div>
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Password</label>
+                      <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="••••••••" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
                    </div>
                    <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Phone Number</label>
                       <div className="flex gap-2">
                         <div className="bg-navy-900 border border-white/5 rounded-xl px-4 py-4 text-slate-500 text-sm font-bold">+234</div>
-                        <input type="tel" placeholder="801 234 5678" className="flex-1 bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
+                        <input value={phone} onChange={e => setPhone(e.target.value)} type="tel" placeholder="801 234 5678" className="flex-1 bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
                       </div>
                    </div>
                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Birth Date</label>
-                         <input type="date" className="w-full bg-navy-900 border border-white/5 rounded-xl px-4 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 transition-colors [color-scheme:dark]" />
+                         <input value={dob} onChange={e => setDob(e.target.value)} type="date" className="w-full bg-navy-900 border border-white/5 rounded-xl px-4 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 transition-colors [color-scheme:dark]" />
                       </div>
                       <div className="space-y-1">
                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Gender</label>
                          <select 
                             value={gender}
                             onChange={(e) => setGender(e.target.value)}
-                            className="w-full bg-navy-900 border border-white/5 rounded-xl px-4 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 appearance-none transition-colors"
+                            className="w-full bg-navy-900 border border-white/5 rounded-xl px-2 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 appearance-none transition-colors"
                          >
                             <option value="" disabled>Select</option>
                             <option value="male">Male</option>
@@ -372,9 +539,22 @@ const AuthPage = ({ onLogin }: { onLogin: () => void }) => {
                          </select>
                       </div>
                    </div>
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Location (State in Nigeria)</label>
+                      <select 
+                        value={state}
+                        onChange={(e) => setState(e.target.value)}
+                        className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 appearance-none transition-colors"
+                      >
+                         <option value="" disabled>Select State</option>
+                         {NIGERIAN_STATES.map(s => (
+                           <option key={s} value={s}>{s}</option>
+                         ))}
+                      </select>
+                   </div>
                    
                    <button 
-                      onClick={onLogin}
+                      onClick={handleSignUp}
                       className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-2xl shadow-2xl shadow-blue-600/20 active:scale-95 transition-all text-sm uppercase tracking-widest mt-4"
                    >
                       Create Elite Account
@@ -388,18 +568,37 @@ const AuthPage = ({ onLogin }: { onLogin: () => void }) => {
                    </button>
                 </div>
              ) : (
-                <>
+                <div className="space-y-6">
+                   <div className="space-y-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Login Identity</label>
+                        <input value={loginId} onChange={e => setLoginId(e.target.value)} type="text" placeholder="Email, Username or Phone" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center pr-1">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Password</label>
+                          <button 
+                            onClick={() => setIsForgotPass(true)}
+                            className="text-[9px] font-black text-blue-500 uppercase tracking-widest hover:text-blue-400 transition-colors"
+                          >
+                            Forgot Password?
+                          </button>
+                        </div>
+                        <input value={loginPassword} onChange={e => setLoginPassword(e.target.value)} type="password" placeholder="••••••••" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
+                      </div>
+                   </div>
+
                    <button 
-                      onClick={() => setIsSigningUp(true)}
+                      onClick={handleLogin}
                       className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-2xl shadow-2xl shadow-blue-600/20 active:scale-95 transition-all text-sm uppercase tracking-widest"
                    >
-                      Sign up
+                      Sign In
                    </button>
                    <button 
-                      onClick={onLogin}
+                      onClick={() => setIsSigningUp(true)}
                       className="w-full glass text-white/90 font-black py-5 rounded-2xl active:scale-95 transition-all text-sm uppercase tracking-widest border-white/5 hover:bg-white/5"
                    >
-                      Login
+                      Create Account
                    </button>
                    
                    <div className="pt-12 text-center opacity-40">
@@ -410,7 +609,7 @@ const AuthPage = ({ onLogin }: { onLogin: () => void }) => {
                          <MessageCircle size={18} />
                       </div>
                    </div>
-                </>
+                </div>
              )}
           </div>
        </div>
@@ -453,12 +652,12 @@ const CreatorDashboard = () => {
       });
       const data = await response.json();
       if (data.requestSuccessful) {
-        alert("Withdrawal successful! Funds are on the way.");
+        console.log("Withdrawal successful! Funds are on the way.");
       } else {
-        alert(`Withdrawal failed: ${data.responseMessage || "Unknown error"}`);
+        console.error(`Withdrawal failed: ${data.responseMessage || "Unknown error"}`);
       }
     } catch (error) {
-      alert("Network error occurred during withdrawal.");
+      console.error("Network error occurred during withdrawal.");
     } finally {
       setIsWithdrawing(false);
     }
@@ -538,14 +737,116 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    console.log("SINCODE: App Mounting...");
+    // Check active session on load
+    const checkSession = async () => {
+      // Safety timeout to ensure app eventually loads even if Supabase is slow/failing
+      const timeout = setTimeout(() => {
+        setIsLoading(false);
+      }, 5000);
+
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error("Session error:", sessionError);
+        } else if (session) {
+          // Fetch profile data
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile) {
+            setCurrentUser(profile);
+            setIsLoggedIn(true);
+          } else if (error) {
+            console.error("Profile error:", error);
+          }
+        }
+      } catch (err) {
+        console.error("Auth check failed:", err);
+      } finally {
+        clearTimeout(timeout);
+        setIsLoading(false);
+      }
+    };
+
+    checkSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        if (profile) {
+          setCurrentUser(profile);
+          setIsLoggedIn(true);
+        }
+      } else {
+        setCurrentUser(null);
+        setIsLoggedIn(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setIsLoggedIn(false);
+    setCurrentUser(null);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-6 p-8 text-center">
+          <motion.div
+            animate={{ 
+              scale: [1, 1.1, 1],
+              opacity: [0.5, 1, 0.5]
+            }}
+            transition={{ 
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            <Heart size={64} className="text-blue-500 fill-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)]" />
+          </motion.div>
+          
+          <div className="space-y-2">
+            <p className="text-white text-[10px] font-black uppercase tracking-[0.6em] opacity-80">Sincode Infrastructure</p>
+            <p className="text-blue-400 text-[10px] font-bold uppercase tracking-[0.2em] opacity-40">Initializing Neural Link...</p>
+          </div>
+
+          <p className="text-slate-700 text-[9px] max-w-[180px] font-medium leading-relaxed">
+            If this takes too long, please check your Supabase environment variables in the Settings menu.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isLoggedIn) {
-    return <AuthPage onLogin={() => setIsLoggedIn(true)} />;
+    return <AuthPage onLogin={(user) => {
+      setCurrentUser(user);
+      setIsLoggedIn(true);
+    }} />;
   }
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 pb-20 md:pb-0 md:pl-24">
-      <Header onOpenMenu={() => setIsMenuOpen(true)} />
+      <Header onOpenMenu={() => setIsMenuOpen(true)} user={currentUser} />
       
       {/* Side Navigation Drawer */}
       <AnimatePresence>
@@ -572,8 +873,12 @@ export default function App() {
                     </div>
                     <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
                  </div>
-                 <h3 className="text-xl font-bold text-slate-900">Tunde Olamide</h3>
-                 <p className="text-slate-500 text-xs font-medium mt-1">@tunde_vibes</p>
+                 <h3 className="text-xl font-bold text-slate-900">{currentUser?.name || "Tunde Olamide"}</h3>
+                 <p className="text-slate-500 text-xs font-medium mt-1">{currentUser?.username || "@tunde_vibes"}</p>
+                 <div className="mt-2 text-xs font-bold text-blue-500 flex items-center gap-1 justify-center">
+                   <TrendingUp size={12} />
+                   <span>{currentUser?.location || "Lagos, Nigeria"}</span>
+                 </div>
                  
                  <div className="flex gap-10 mt-6">
                     <div className="text-center">
@@ -590,16 +895,23 @@ export default function App() {
               <div className="flex-1 overflow-y-auto py-4 scrollbar-hide">
                  <div className="px-2 space-y-1 text-slate-700">
                     {[
-                      { icon: UserCircle, label: 'Profile' },
-                      { icon: Users, label: 'Subscriptions' },
-                      { icon: ImageIcon, label: 'Media Collection' },
-                      { icon: List, label: 'Lists' },
-                      { icon: Bookmark, label: 'Bookmarks' },
-                      { icon: MessageCircle, label: 'Messages' },
-                      { icon: Bell, label: 'Notifications' },
-                      { icon: UserPlus, label: 'Referrals' },
+                      { icon: UserCircle, label: 'Profile', id: 'profile' },
+                      { icon: Users, label: 'Subscriptions', id: 'discover' },
+                      { icon: ImageIcon, label: 'Media Collection', id: 'discover' },
+                      { icon: List, label: 'Lists', id: 'discover' },
+                      { icon: Bookmark, label: 'Bookmarks', id: 'discover' },
+                      { icon: MessageCircle, label: 'Messages', id: 'messages' },
+                      { icon: Bell, label: 'Notifications', id: 'notifications' },
+                      { icon: UserPlus, label: 'Referrals', id: 'home' },
                     ].map((item, i) => (
-                       <button key={i} className="w-full flex items-center gap-4 px-6 py-3.5 hover:bg-slate-50 transition-all group rounded-xl">
+                       <button 
+                         key={i} 
+                         onClick={() => {
+                           setActiveTab(item.id);
+                           setIsMenuOpen(false);
+                         }}
+                         className="w-full flex items-center gap-4 px-6 py-3.5 hover:bg-slate-50 transition-all group rounded-xl"
+                       >
                           <item.icon size={22} className="text-slate-400 group-hover:text-blue-500 transition-colors" />
                           <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">{item.label}</span>
                        </button>
@@ -663,10 +975,10 @@ export default function App() {
               <div className="premium-card !p-10 flex flex-col items-center text-center relative overflow-hidden group">
                  <div className="absolute top-0 inset-x-0 h-40 bg-linear-to-b from-blue-600/10 to-transparent blur-3xl opacity-50 group-hover:opacity-70 transition-opacity"></div>
                  <div className="w-28 h-28 rounded-3xl glass p-1 shadow-2xl overflow-hidden relative z-10 mb-8 transition-transform group-hover:scale-[1.02]">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde" className="w-full h-full object-cover rounded-[1.4rem]" alt="User" />
+                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.name || "Tunde"}`} className="w-full h-full object-cover rounded-[1.4rem]" alt="User" />
                  </div>
-                 <h2 className="text-3xl font-display font-black text-white uppercase italic tracking-tighter">Tunde Olamide</h2>
-                 <p className="text-blue-400 text-[11px] font-black uppercase tracking-[0.4em] mb-10">@tunde_vibes • Established 2024</p>
+                 <h2 className="text-3xl font-display font-black text-white uppercase italic tracking-tighter">{currentUser?.name || "Anonymous User"}</h2>
+                 <p className="text-blue-400 text-[11px] font-black uppercase tracking-[0.4em] mb-10">{currentUser?.username || "@user"} • {currentUser?.location || "Lagos, Nigeria"}</p>
                  
                  <div className="grid grid-cols-2 gap-6 w-full">
                     <div className="bg-black/60 border border-white/5 p-6 rounded-[2rem] backdrop-blur-md">
@@ -703,10 +1015,39 @@ export default function App() {
                  ))}
               </div>
 
-              <button className="w-full glass text-slate-500 hover:text-red-400 font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 active:bg-red-500/10 transition-all uppercase tracking-[0.4em] text-[10px] mb-10 border-white/5">
+              <button 
+                onClick={handleLogout}
+                className="w-full glass text-slate-500 hover:text-red-400 font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 active:bg-red-500/10 transition-all uppercase tracking-[0.4em] text-[10px] mb-10 border-white/5"
+              >
                  <LogOut size={22} />
                  Disconnect Sessions
               </button>
+            </motion.div>
+          )}
+
+          {activeTab === 'notifications' && (
+            <motion.div
+              key="notifications"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="p-4 space-y-4"
+            >
+               <h2 className="text-xl font-bold px-2 py-4">Notifications</h2>
+               {[1, 2, 3, 4, 5].map(i => (
+                 <div key={i} className="flex gap-4 p-4 hover:bg-slate-50 rounded-2xl transition-colors border-b border-slate-50 last:border-0 items-start">
+                    <div className="w-12 h-12 rounded-full overflow-hidden shrink-0">
+                       <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=user${i}`} className="w-full h-full bg-blue-50" alt="" />
+                    </div>
+                    <div className="flex-1">
+                       <p className="text-sm">
+                          <span className="font-bold">Creator {i}</span> {i % 2 === 0 ? 'posted a new story' : 'replied to your message'}
+                       </p>
+                       <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-widest">{i * 10} minutes ago</p>
+                    </div>
+                    <div className="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
+                 </div>
+               ))}
             </motion.div>
           )}
 
