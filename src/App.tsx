@@ -50,11 +50,9 @@ const Navbar = ({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: 
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t-0 px-2 py-3 flex justify-around items-center md:top-0 md:bottom-auto md:flex-col md:w-24 md:h-full md:border-r md:border-white/5 bg-navy-950/80">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-2 py-3 flex justify-around items-center md:top-0 md:bottom-auto md:flex-col md:w-24 md:h-full md:border-r md:border-slate-100">
       <div className="hidden md:flex mb-12 items-center justify-center">
-        <div className="group w-14 h-14 bg-navy-800 rounded-2xl flex items-center justify-center text-blue-500 font-display font-black text-2xl tracking-tighter shadow-2xl border border-white/5 hover:border-blue-500/50 transition-all cursor-pointer">
-          SC
-        </div>
+        <Heart size={32} className="text-blue-500 fill-blue-500" />
       </div>
       {tabs.map((tab) => {
         const Icon = tab.icon;
@@ -65,11 +63,10 @@ const Navbar = ({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: 
             onClick={() => setActiveTab(tab.id)}
             className={cn(
               "flex flex-col items-center gap-1.5 transition-all duration-300",
-              isActive ? "text-blue-400 scale-110 drop-shadow-[0_0_12px_rgba(59,130,246,0.5)]" : "text-slate-500 hover:text-slate-300"
+              isActive ? "text-blue-500 scale-110" : "text-slate-400 hover:text-slate-600"
             )}
           >
             <Icon size={26} strokeWidth={isActive ? 2.5 : 2} />
-            <span className="text-[10px] font-bold uppercase tracking-widest md:hidden">{tab.label}</span>
           </button>
         );
       })}
@@ -79,13 +76,13 @@ const Navbar = ({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: 
 
 const Header = ({ onOpenMenu }: { onOpenMenu: () => void }) => {
   return (
-    <header className="sticky top-0 z-40 glass border-b-0 border-x-0 border-t-0 px-4 py-3 flex items-center justify-between bg-black/40">
+    <header className="sticky top-0 z-40 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-3">
         <button onClick={onOpenMenu} className="relative active:scale-95 transition-transform">
-          <div className="w-10 h-10 rounded-full glass border border-white/10 p-0.5">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde" className="w-full h-full rounded-full" alt="User" />
+          <div className="w-10 h-10 rounded-full border border-slate-200 p-0.5">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde" className="w-full h-full rounded-full bg-slate-100" alt="User" />
           </div>
-          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-black rounded-full shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
+          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
         </button>
       </div>
       
@@ -94,11 +91,11 @@ const Header = ({ onOpenMenu }: { onOpenMenu: () => void }) => {
       </div>
 
       <div className="flex items-center gap-3">
-        <button className="text-slate-400 p-1.5 glass rounded-xl border-white/5">
+        <button className="text-slate-400 p-1.5 hover:bg-slate-50 rounded-xl transition-colors">
           <HelpCircle size={18} />
         </button>
-        <div className="bg-navy-800 border border-white/5 py-1.5 px-4 rounded-xl flex items-center gap-2 shadow-lg">
-           <span className="text-[11px] font-black text-white naira-glow tracking-tighter">₦12,450</span>
+        <div className="bg-slate-100 border border-slate-200 py-1.5 px-4 rounded-xl flex items-center gap-2 shadow-sm">
+           <span className="text-[11px] font-black text-slate-600 tracking-tighter">$0</span>
         </div>
       </div>
     </header>
@@ -109,9 +106,9 @@ const Header = ({ onOpenMenu }: { onOpenMenu: () => void }) => {
 
 const FeedPage = () => {
   const [creators] = useState([
-    { id: 1, name: 'Tems Angel', handle: 'tems_vibes', image: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&q=80', active: true },
-    { id: 2, name: 'Burna Fan', handle: 'odogwu_queen', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80', active: false },
-    { id: 3, name: 'Lagos Model', handle: 'ekofinesse', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80', active: true },
+    { id: 1, name: 'TheLittleJui...', handle: 'thelittlejui...', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80', active: true },
+    { id: 2, name: 'Lagos Model', handle: 'ekofinesse', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80', active: true },
+    { id: 3, name: 'Studio Vibes', handle: 'studiovibes', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80', active: false },
   ]);
 
   const handlePayment = (amount: number, description: string) => {
@@ -131,56 +128,59 @@ const FeedPage = () => {
   };
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="bg-white min-h-screen">
       {/* Pills Navigation */}
-      <div className="px-5 pt-4 flex items-center justify-between">
+      <div className="px-4 pt-4 flex items-center justify-between overflow-hidden">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1">
-           {['All', 'Subscribed', 'For You', 'Trending'].map((tab, i) => (
+           {['All', 'Subscribed', 'For You'].map((tab, i) => (
               <button 
                 key={tab} 
                 className={cn(
-                  "px-6 py-2.5 rounded-full whitespace-nowrap text-xs font-black uppercase tracking-widest transition-all",
-                  i === 0 ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "glass text-slate-500 hover:text-white"
+                  "px-5 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all border",
+                  i === 0 
+                    ? "bg-blue-50 text-blue-600 border-blue-100" 
+                    : "bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100"
                 )}
               >
                 {tab}
               </button>
            ))}
+           <button className="p-2 aspect-square rounded-full bg-slate-50 border border-slate-100 text-blue-500">
+              <TrendingUp size={18} />
+           </button>
+           <button className="p-2 aspect-square rounded-full bg-slate-50 border border-slate-100 text-blue-500">
+              <PlusSquare size={18} />
+           </button>
         </div>
       </div>
 
       {/* Title Section */}
-      <div className="px-6 flex items-center justify-between">
-         <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] pl-1">Made For You</h3>
-         <button className="text-slate-400"><Settings size={18} /></button>
+      <div className="px-6 mt-6 flex items-center justify-between">
+         <h3 className="text-base font-bold text-slate-800">Made For You</h3>
+         <button className="text-slate-900"><MoreHorizontal size={20} /></button>
       </div>
 
       {/* Stories Carousel */}
-      <section className="px-6">
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+      <section className="px-4 mt-4">
+        <div className="flex gap-3 overflow-x-auto pb-6 scrollbar-hide">
           {creators.map((c) => (
-            <div key={c.id} className="relative aspect-[2/3] w-36 rounded-3xl overflow-hidden glass border-white/5 shrink-0 group cursor-pointer transition-transform hover:scale-[1.02]">
+            <div key={c.id} className="relative aspect-[2/3] w-32 rounded-2xl overflow-hidden shadow-sm shrink-0 group border border-slate-100">
               <img 
                 src={c.image} 
-                className={cn("w-full h-full object-cover grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500", !c.active && "blur-xl")} 
+                className={cn("w-full h-full object-cover", !c.active && "blur-2xl")} 
                 alt={c.name} 
               />
-              <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-transparent flex flex-col justify-end p-4">
-                 <div className="flex items-center gap-2 mb-1">
-                    <div className="w-5 h-5 rounded-lg glass border border-blue-500/30 overflow-hidden">
-                       <img src={c.image} className="w-full h-full object-cover" alt="" />
-                    </div>
-                    <span className="text-[9px] font-black text-white uppercase tracking-tighter truncate">@{c.handle}</span>
-                 </div>
+              <div className="absolute inset-x-0 bottom-0 p-3 flex flex-col justify-end bg-gradient-to-t from-black/60 to-transparent h-1/2">
+                 <p className="text-[10px] font-bold text-white leading-tight">{c.name}</p>
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
                  {c.active ? (
-                    <div className="w-8 h-8 glass rounded-full flex items-center justify-center text-white pl-0.5">
-                       <Play size={16} fill="currentColor" />
+                    <div className="w-9 h-9 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white pl-0.5">
+                       <Play size={18} fill="currentColor" />
                     </div>
                  ) : (
-                    <div className="w-8 h-8 glass rounded-full flex items-center justify-center text-white">
-                       <EyeOff size={16} />
+                    <div className="w-9 h-9 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white">
+                       <EyeOff size={18} />
                     </div>
                  )}
               </div>
@@ -189,68 +189,68 @@ const FeedPage = () => {
         </div>
       </section>
 
+      {/* Feed Filter Icon */}
+      <div className="px-6 py-2 border-t border-slate-50 flex items-center justify-end">
+         <Settings size={18} className="text-slate-400" />
+      </div>
+
       {/* Feed Posts */}
-      <section className="space-y-12">
-        {[1, 2].map((post) => (
-          <div key={post} className="bg-black/20 border-y border-white/5 py-6 space-y-5">
+      <section className="space-y-0">
+        {[1].map((post) => (
+          <div key={post} className="bg-white border-b border-slate-100 py-6 space-y-4">
             {/* Post Header */}
-            <div className="px-6 flex items-center justify-between">
+            <div className="px-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/5">
-                   <img src={`https://i.pravatar.cc/150?u=${post + 10}`} className="w-full h-full object-cover" alt="Avatar" />
+                <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-100">
+                   <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=juice" className="w-full h-full object-cover bg-pink-100" alt="Avatar" />
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <h3 className="text-sm font-black text-white tracking-tight">TheLittleJui...</h3>
+                    <h3 className="text-sm font-bold text-slate-900">TheLittleJui...</h3>
                     <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                        <ShieldCheck size={10} className="text-white" strokeWidth={3} />
                     </div>
                   </div>
-                  <p className="text-[11px] text-slate-500 font-medium">@thelittlejui... • 6h</p>
+                  <p className="text-xs text-slate-500">@Thelittlejui... • 6h</p>
                 </div>
               </div>
-              <button className="text-slate-500 p-2">
+              <button className="text-slate-400 p-2">
                  <MoreHorizontal size={20} />
               </button>
             </div>
             
             {/* Post Content */}
-            <div className="px-6 space-y-4">
-               <p className="text-sm text-slate-300 font-medium leading-relaxed">
-                  Dropped a new exclusive vibes in the vault! ⚡️ Lagos really setting the pace this weekend. Check the private feed for the full 15min drop. #LagosVibes #SincodeElite
+            <div className="px-4 space-y-4">
+               <p className="text-sm text-slate-700 leading-relaxed">
+                 Squirted again... This time it shot so far My pussy kept twitching and gushing nonstop, I couldn't stop cumming at all~ 💖💕🐳🐳🐳 #squirting #squirter #bigsquirt #pussysquirt #femalesquirt
                </p>
                
-               <div className="relative aspect-video rounded-2xl overflow-hidden glass border-white/5 group bg-navy-950">
-                 <img src={`https://images.unsplash.com/photo-${post === 1 ? '1544005313-94ddf0286df2' : '1515886657613-9f3515b0c78f'}?w=800&q=80`} className="w-full h-full object-cover blur-2xl opacity-40 absolute" alt="Teaser" />
-                 <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-black/40">
-                    <div className="w-14 h-14 glass rounded-full flex items-center justify-center text-white mb-4">
-                       <EyeOff size={24} />
+               <div className="relative aspect-video rounded-xl overflow-hidden group bg-slate-200">
+                 <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80" className="w-full h-full object-cover blur-3xl opacity-60 absolute scale-125" alt="Teaser" />
+                 <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
+                    <div className="w-14 h-14 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white mb-3">
+                       <EyeOff size={28} />
                     </div>
-                    <h4 className="text-lg font-black text-white uppercase italic tracking-tight mb-2">Locked Media</h4>
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-6">Subscription Required</p>
-                    <button 
-                      onClick={() => handlePayment(2500, "Unlock Content")}
-                      className="bg-blue-600 text-white font-black py-3 px-8 rounded-xl text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 active:scale-95 transition-all"
-                    >
-                      Unlock for ₦2,500
-                    </button>
                  </div>
                </div>
             </div>
 
-            {/* Post Actions */}
-            <div className="px-6 flex items-center justify-between pointer-events-none opacity-40">
-               <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-2">
-                     <Heart size={20} />
-                     <span className="text-xs font-black uppercase">1.2k</span>
+            {/* Post Bottom Bar */}
+            <div className="px-4 pt-2 flex items-center justify-between">
+               <div className="flex items-center gap-6 text-slate-400">
+                  <div className="flex items-center gap-1.5 p-1">
+                     <Home size={22} className="text-blue-500" />
                   </div>
-                  <div className="flex items-center gap-2">
-                     <MessageCircle size={20} />
-                     <span className="text-xs font-black uppercase">48</span>
+                  <div className="flex items-center gap-1.5 p-1">
+                     <Search size={22} />
+                  </div>
+                  <div className="flex items-center gap-1.5 p-1">
+                     <MessageCircle size={22} />
+                  </div>
+                  <div className="flex items-center gap-1.5 p-1">
+                     <Bell size={22} />
                   </div>
                </div>
-               <div className="text-xs font-black text-blue-400 uppercase tracking-widest naira-glow italic">Premium Pool: ₦45k</div>
             </div>
           </div>
         ))}
@@ -260,6 +260,9 @@ const FeedPage = () => {
 };
 
 const AuthPage = ({ onLogin }: { onLogin: () => void }) => {
+  const [isSigningUp, setIsSigningUp] = useState(false);
+  const [gender, setGender] = useState('');
+  
   const teasers = [
     { id: 1, image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80', active: true, title: 'BTS: Lagos Fashion Week' },
     { id: 2, image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80', active: false, title: 'Private Studio Session' },
@@ -269,12 +272,15 @@ const AuthPage = ({ onLogin }: { onLogin: () => void }) => {
   return (
     <div className="min-h-screen bg-black flex flex-col font-sans">
        {/* Top Section: Branding & Logo */}
-       <div className="bg-navy-900 pt-12 pb-16 px-8 relative overflow-hidden flex flex-col items-center">
+       <div className={cn(
+         "bg-navy-900 px-8 relative overflow-hidden flex flex-col items-center transition-all duration-500",
+         isSigningUp ? "pt-8 pb-8" : "pt-12 pb-16"
+       )}>
           <div className="absolute top-0 inset-x-0 h-full bg-linear-to-b from-blue-600/5 to-transparent"></div>
           
           <div className="relative z-10 flex flex-col items-center">
              <div className="relative mb-6">
-                <Heart size={80} className="text-white fill-white" strokeWidth={1} />
+                <Heart size={isSigningUp ? 60 : 80} className="text-white fill-white transition-all" strokeWidth={1} />
                 <div className="absolute inset-0 flex items-center justify-center">
                    <div className="w-8 h-8 rounded-full bg-navy-900 flex items-center justify-center">
                       <Eye size={18} className="text-blue-400" strokeWidth={3} />
@@ -285,60 +291,127 @@ const AuthPage = ({ onLogin }: { onLogin: () => void }) => {
              <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.4em]">Elite Nigerian Creator Hub</p>
           </div>
 
-          {/* Featured Teasers Grid */}
-          <div className="grid grid-cols-3 gap-3 w-full max-w-lg mt-12 relative z-20">
-             {teasers.map((t, i) => (
-                <div key={t.id} className={cn(
-                   "relative aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/10 group",
-                   i === 1 ? "scale-105 z-10 -rotate-1" : "rotate-1 opacity-80"
-                )}>
-                   <img src={t.image} className={cn("w-full h-full object-cover", !t.active && "blur-xl")} alt="Teaser" />
-                   <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                      {t.active ? (
-                         <div className="w-10 h-10 glass rounded-full flex items-center justify-center text-white pl-1">
-                            <Play size={20} fill="currentColor" />
-                         </div>
-                      ) : (
-                         <div className="w-10 h-10 glass rounded-full flex items-center justify-center text-white">
-                            <EyeOff size={20} />
-                         </div>
-                      )}
-                   </div>
-                   {t.active && (
-                      <div className="absolute top-2 left-2 flex items-center gap-1.5 glass px-2 py-0.5 rounded-full scale-75 origin-top-left">
-                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
-                         <span className="text-[9px] font-black uppercase text-white">Live</span>
-                      </div>
-                   )}
-                </div>
-             ))}
-          </div>
+          {/* Featured Teasers Grid - Hide or shrink when signing up */}
+          {!isSigningUp && (
+            <div className="grid grid-cols-3 gap-3 w-full max-w-lg mt-12 relative z-20">
+               {teasers.map((t, i) => (
+                  <div key={t.id} className={cn(
+                     "relative aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/10 group",
+                     i === 1 ? "scale-105 z-10 -rotate-1" : "rotate-1 opacity-80"
+                  )}>
+                     <img src={t.image} className={cn("w-full h-full object-cover", !t.active && "blur-xl")} alt="Teaser" />
+                     <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        {t.active ? (
+                           <div className="w-10 h-10 glass rounded-full flex items-center justify-center text-white pl-1">
+                              <Play size={20} fill="currentColor" />
+                           </div>
+                        ) : (
+                           <div className="w-10 h-10 glass rounded-full flex items-center justify-center text-white">
+                              <EyeOff size={20} />
+                           </div>
+                        )}
+                     </div>
+                     {t.active && (
+                        <div className="absolute top-2 left-2 flex items-center gap-1.5 glass px-2 py-0.5 rounded-full scale-75 origin-top-left">
+                           <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                           <span className="text-[9px] font-black uppercase text-white">Live</span>
+                        </div>
+                     )}
+                  </div>
+               ))}
+            </div>
+          )}
        </div>
 
        {/* Bottom Section: Actions */}
-       <div className="flex-1 bg-black p-8 flex flex-col items-center justify-center rounded-t-[3rem] -mt-10 relative z-30 shadow-[0_-20px_40px_rgba(0,0,0,0.8)] border-t border-white/5">
+       <div className={cn(
+         "flex-1 bg-black p-8 flex flex-col items-center rounded-t-[3rem] -mt-10 relative z-30 shadow-[0_-20px_40px_rgba(0,0,0,0.8)] border-t border-white/5 overflow-y-auto scrollbar-hide",
+         isSigningUp ? "justify-start" : "justify-center"
+       )}>
           <div className="w-full max-w-sm space-y-4">
-             <button 
-                onClick={onLogin}
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-2xl shadow-2xl shadow-blue-600/20 active:scale-95 transition-all text-sm uppercase tracking-widest"
-             >
-                Sign up
-             </button>
-             <button 
-                onClick={onLogin}
-                className="w-full glass text-white/90 font-black py-5 rounded-2xl active:scale-95 transition-all text-sm uppercase tracking-widest border-white/5 hover:bg-white/5"
-             >
-                Login
-             </button>
-             
-             <div className="pt-12 text-center opacity-40">
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-4">Secure Gateway • Lagos, Nigeria</p>
-                <div className="flex justify-center gap-6 text-slate-500">
-                   <Home size={18} />
-                   <Search size={18} />
-                   <MessageCircle size={18} />
+             {isSigningUp ? (
+                <div className="space-y-4 py-4">
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Full Name</label>
+                      <input type="text" placeholder="e.g. Tunde Olamide" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
+                   </div>
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Username</label>
+                      <input type="text" placeholder="@tunde_vibes" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
+                   </div>
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Email Address</label>
+                      <input type="email" placeholder="tunde@example.com" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
+                   </div>
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Phone Number</label>
+                      <div className="flex gap-2">
+                        <div className="bg-navy-900 border border-white/5 rounded-xl px-4 py-4 text-slate-500 text-sm font-bold">+234</div>
+                        <input type="tel" placeholder="801 234 5678" className="flex-1 bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
+                      </div>
+                   </div>
+                   <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Birth Date</label>
+                         <input type="date" className="w-full bg-navy-900 border border-white/5 rounded-xl px-4 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 transition-colors [color-scheme:dark]" />
+                      </div>
+                      <div className="space-y-1">
+                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Gender</label>
+                         <select 
+                            value={gender}
+                            onChange={(e) => setGender(e.target.value)}
+                            className="w-full bg-navy-900 border border-white/5 rounded-xl px-4 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 appearance-none transition-colors"
+                         >
+                            <option value="" disabled>Select</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="gay">Gay</option>
+                            <option value="lesbian">Lesbian</option>
+                            <option value="bisexual">Bisexual</option>
+                            <option value="lgbtq">LGBTQ+</option>
+                         </select>
+                      </div>
+                   </div>
+                   
+                   <button 
+                      onClick={onLogin}
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-2xl shadow-2xl shadow-blue-600/20 active:scale-95 transition-all text-sm uppercase tracking-widest mt-4"
+                   >
+                      Create Elite Account
+                   </button>
+                   
+                   <button 
+                      onClick={() => setIsSigningUp(false)}
+                      className="w-full text-slate-500 font-black py-2 text-[10px] uppercase tracking-widest hover:text-white transition-colors"
+                   >
+                      Already have an account? Login
+                   </button>
                 </div>
-             </div>
+             ) : (
+                <>
+                   <button 
+                      onClick={() => setIsSigningUp(true)}
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-2xl shadow-2xl shadow-blue-600/20 active:scale-95 transition-all text-sm uppercase tracking-widest"
+                   >
+                      Sign up
+                   </button>
+                   <button 
+                      onClick={onLogin}
+                      className="w-full glass text-white/90 font-black py-5 rounded-2xl active:scale-95 transition-all text-sm uppercase tracking-widest border-white/5 hover:bg-white/5"
+                   >
+                      Login
+                   </button>
+                   
+                   <div className="pt-12 text-center opacity-40">
+                      <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-4">Secure Gateway • Lagos, Nigeria</p>
+                      <div className="flex justify-center gap-6 text-slate-500">
+                         <Home size={18} />
+                         <Search size={18} />
+                         <MessageCircle size={18} />
+                      </div>
+                   </div>
+                </>
+             )}
           </div>
        </div>
     </div>
@@ -464,15 +537,14 @@ const CreatorDashboard = () => {
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   if (!isLoggedIn) {
     return <AuthPage onLogin={() => setIsLoggedIn(true)} />;
   }
 
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
   return (
-    <div className="min-h-screen bg-black font-sans text-slate-200 pb-20 md:pb-0 md:pl-24">
+    <div className="min-h-screen bg-white font-sans text-slate-900 pb-20 md:pb-0 md:pl-24">
       <Header onOpenMenu={() => setIsMenuOpen(true)} />
       
       {/* Side Navigation Drawer */}
@@ -484,39 +556,39 @@ export default function App() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMenuOpen(false)}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60]"
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
             />
             <motion.div 
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 w-[85%] max-w-sm bg-navy-950 z-[70] shadow-2xl border-r border-white/5 flex flex-col"
+              className="fixed inset-y-0 left-0 w-[85%] max-w-sm bg-white z-[70] shadow-2xl flex flex-col"
             >
-              <div className="p-8 pb-6 flex flex-col items-center text-center border-b border-white/5">
+              <div className="p-8 pb-6 flex flex-col items-center text-center border-b border-slate-100">
                  <div className="relative mb-4">
-                    <div className="w-20 h-20 rounded-full glass border-2 border-blue-500/50 p-1">
-                       <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde" className="w-full h-full rounded-full" alt="User" />
+                    <div className="w-20 h-20 rounded-full border-2 border-blue-500 p-1">
+                       <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde" className="w-full h-full rounded-full bg-slate-100" alt="User" />
                     </div>
-                    <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-navy-950 rounded-full"></div>
+                    <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
                  </div>
-                 <h3 className="text-xl font-display font-black text-white italic tracking-tighter">Tunde Olamide</h3>
-                 <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">@tunde_vibes</p>
+                 <h3 className="text-xl font-bold text-slate-900">Tunde Olamide</h3>
+                 <p className="text-slate-500 text-xs font-medium mt-1">@tunde_vibes</p>
                  
                  <div className="flex gap-10 mt-6">
                     <div className="text-center">
-                       <p className="text-lg font-black text-white">1.2k</p>
-                       <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">Likes</p>
+                       <p className="text-lg font-bold text-slate-900">0</p>
+                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Likes</p>
                     </div>
                     <div className="text-center">
-                       <p className="text-lg font-black text-white">2.4k</p>
-                       <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">Followers</p>
+                       <p className="text-lg font-bold text-slate-900">0</p>
+                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Followers</p>
                     </div>
                  </div>
               </div>
 
               <div className="flex-1 overflow-y-auto py-4 scrollbar-hide">
-                 <div className="px-4 space-y-1">
+                 <div className="px-2 space-y-1 text-slate-700">
                     {[
                       { icon: UserCircle, label: 'Profile' },
                       { icon: Users, label: 'Subscriptions' },
@@ -527,13 +599,13 @@ export default function App() {
                       { icon: Bell, label: 'Notifications' },
                       { icon: UserPlus, label: 'Referrals' },
                     ].map((item, i) => (
-                       <button key={i} className="w-full flex items-center gap-4 px-6 py-4 hover:bg-white/5 transition-all group rounded-2xl">
-                          <item.icon size={22} className="text-slate-500 group-hover:text-blue-400 transition-colors" />
-                          <span className="text-sm font-bold text-slate-300 group-hover:text-white uppercase tracking-widest">{item.label}</span>
+                       <button key={i} className="w-full flex items-center gap-4 px-6 py-3.5 hover:bg-slate-50 transition-all group rounded-xl">
+                          <item.icon size={22} className="text-slate-400 group-hover:text-blue-500 transition-colors" />
+                          <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">{item.label}</span>
                        </button>
                     ))}
 
-                    <div className="my-4 border-t border-white/5" />
+                    <div className="my-4 border-t border-slate-100" />
 
                     {[
                       { icon: CreditCard, label: 'Add Payment Method' },
@@ -543,9 +615,9 @@ export default function App() {
                       { icon: FileText, label: 'Terms' },
                       { icon: Shield, label: 'Privacy Policy' },
                     ].map((item, i) => (
-                       <button key={i} className="w-full flex items-center gap-4 px-6 py-4 hover:bg-white/5 transition-all group rounded-2xl">
-                          <item.icon size={22} className="text-slate-500 group-hover:text-blue-400 transition-colors" />
-                          <span className="text-sm font-bold text-slate-300 group-hover:text-white uppercase tracking-widest">{item.label}</span>
+                       <button key={i} className="w-full flex items-center gap-4 px-6 py-3.5 hover:bg-slate-50 transition-all group rounded-xl">
+                          <item.icon size={22} className="text-slate-400 group-hover:text-blue-500 transition-colors" />
+                          <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">{item.label}</span>
                        </button>
                     ))}
                  </div>
@@ -555,14 +627,14 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <main className="max-w-2xl mx-auto md:max-w-3xl lg:max-w-5xl pt-4">
+      <main className="max-w-2xl mx-auto md:max-w-3xl lg:max-w-5xl">
         <AnimatePresence mode="wait">
           {activeTab === 'home' && (
             <motion.div
               key="home"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
               <FeedPage />
             </motion.div>
