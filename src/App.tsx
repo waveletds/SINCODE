@@ -88,15 +88,20 @@ const Header = ({ onOpenMenu, user }: { onOpenMenu: () => void, user: any }) => 
       </div>
       
       <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
-         <Heart size={28} className="text-blue-500 fill-blue-500" strokeWidth={1.5} />
+         <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center">
+            <Heart size={24} className="text-blue-500 fill-blue-500" strokeWidth={1.5} />
+         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <button className="text-slate-400 p-1.5 hover:bg-slate-50 rounded-xl transition-colors">
-          <HelpCircle size={18} />
+          <MessageCircle size={22} />
         </button>
-        <div className="bg-slate-100 border border-slate-200 py-1.5 px-4 rounded-xl flex items-center gap-2 shadow-sm">
-           <span className="text-[11px] font-black text-slate-600 tracking-tighter">$0</span>
+        <button className="text-slate-400 p-1.5 hover:bg-slate-50 rounded-xl transition-colors">
+          <HelpCircle size={22} />
+        </button>
+        <div className="bg-slate-50 border border-slate-100 py-1.5 px-3 rounded-lg flex items-center gap-2 ml-1">
+           <span className="text-xs font-bold text-slate-700">$0</span>
         </div>
       </div>
     </header>
@@ -325,7 +330,11 @@ const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
     setIsLoading(false);
 
     if (signUpError) {
-      setError(signUpError.message);
+      if (signUpError.message === 'Failed to fetch') {
+        setError('Network error: Could not reach Supabase. Please check your internet connection and Supabase environment variables.');
+      } else {
+        setError(signUpError.message);
+      }
     } else if (data.user) {
       setSuccess('Account created! Please check your email for verification.');
       setIsSigningUp(false);
@@ -343,33 +352,39 @@ const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
 
     let emailToUse = loginId;
 
-    // If loginId doesn't look like an email, try to find the profile to get the email
-    if (!loginId.includes('@') || loginId.startsWith('@')) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('email')
-        .or(`username.eq.${loginId},phone.eq.${loginId},username.eq.@${loginId}`)
-        .maybeSingle();
-      
-      if (profile && profile.email) {
-        emailToUse = profile.email;
+    try {
+      // If loginId doesn't look like an email, try to find the profile to get the email
+      if (!loginId.includes('@') || loginId.startsWith('@')) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('email')
+          .or(`username.eq.${loginId},phone.eq.${loginId},username.eq.@${loginId}`)
+          .maybeSingle();
+        
+        if (profileError) throw profileError;
+
+        if (profile && profile.email) {
+          emailToUse = profile.email;
+        }
       }
-    }
 
-    // Since profiles doesn't currently store email (for security/privacy), 
-    // the standard way is to use email for Auth.
-    // However, I will update the trigger to store a obscured/safe email or just let the user know.
-    // FOR NOW: I will update the profiles table to include email so we can map identity -> email.
-    
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email: emailToUse,
-      password: loginPassword,
-    });
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: emailToUse,
+        password: loginPassword,
+      });
 
-    setIsLoading(false);
-
-    if (signInError) {
-      setError('Invalid credentials or non-registered user');
+      if (signInError) {
+        setError('Invalid credentials or non-registered user');
+      }
+    } catch (err: any) {
+      console.error("Login attempt failed:", err);
+      if (err.message === 'Failed to fetch') {
+        setError('Network error: Could not reach Supabase. Check your setup.');
+      } else {
+        setError(err.message || 'Login failed');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -966,62 +981,113 @@ export default function App() {
           {activeTab === 'profile' && (
              <motion.div
               key="profile"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="p-6 space-y-10"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="bg-white min-h-screen"
             >
-              {/* Profile Header */}
-              <div className="premium-card !p-10 flex flex-col items-center text-center relative overflow-hidden group">
-                 <div className="absolute top-0 inset-x-0 h-40 bg-linear-to-b from-blue-600/10 to-transparent blur-3xl opacity-50 group-hover:opacity-70 transition-opacity"></div>
-                 <div className="w-28 h-28 rounded-3xl glass p-1 shadow-2xl overflow-hidden relative z-10 mb-8 transition-transform group-hover:scale-[1.02]">
-                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.name || "Tunde"}`} className="w-full h-full object-cover rounded-[1.4rem]" alt="User" />
-                 </div>
-                 <h2 className="text-3xl font-display font-black text-white uppercase italic tracking-tighter">{currentUser?.name || "Anonymous User"}</h2>
-                 <p className="text-blue-400 text-[11px] font-black uppercase tracking-[0.4em] mb-10">{currentUser?.username || "@user"} • {currentUser?.location || "Lagos, Nigeria"}</p>
-                 
-                 <div className="grid grid-cols-2 gap-6 w-full">
-                    <div className="bg-black/60 border border-white/5 p-6 rounded-[2rem] backdrop-blur-md">
-                       <p className="text-[10px] text-slate-500 font-black uppercase mb-3 tracking-[0.3em]">Wallet</p>
-                       <p className="text-2xl font-black text-white naira-glow tracking-tighter">{formatNaira(12450)}</p>
+              {/* Profile Header Block */}
+              <div className="relative">
+                {/* Cover Photo */}
+                <div className="h-48 w-full bg-linear-to-b from-slate-50 to-slate-200 overflow-hidden">
+                  {/* Potentially an image if user uploaded one */}
+                </div>
+
+                {/* Profile Info Overlay */}
+                <div className="px-4 -mt-16 flex flex-col relative z-10">
+                  <div className="flex items-end justify-between">
+                    <div className="relative">
+                      <div className="w-28 h-28 rounded-full border-4 border-white bg-slate-100 overflow-hidden">
+                        <img 
+                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.name || "sinner"}`} 
+                          className="w-full h-full object-cover p-1 bg-slate-200" 
+                          alt="Avatar" 
+                        />
+                      </div>
+                      <div className="absolute bottom-2 right-2 w-5 h-5 bg-green-500 border-4 border-white rounded-full"></div>
                     </div>
-                    <div className="bg-black/60 border border-white/5 p-6 rounded-[2rem] backdrop-blur-md">
-                       <p className="text-[10px] text-slate-500 font-black uppercase mb-3 tracking-[0.3em]">Network</p>
-                       <p className="text-2xl font-black text-white tracking-tighter">24 Creators</p>
+                    
+                    <div className="flex gap-2 mb-2">
+                       <button className="px-6 py-2 bg-slate-100 font-bold text-sm rounded-full border border-slate-200 text-slate-800">
+                          Profile
+                       </button>
+                       <button className="p-2 bg-slate-100 rounded-full border border-slate-200 text-slate-800">
+                          <MoreHorizontal size={20} />
+                       </button>
                     </div>
-                 </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <h2 className="text-xl font-bold text-slate-900">{currentUser?.name || "sinner25"}</h2>
+                    <p className="text-slate-500 text-sm font-medium">{currentUser?.username || "@sinner25"}</p>
+                    <p className="text-slate-400 text-[11px] mt-1">Last seen 2 minutes ago</p>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex gap-4 mt-4">
+                    <div className="flex items-center gap-1.5">
+                       <Heart size={16} className="text-slate-400 fill-slate-400" />
+                       <span className="text-sm font-bold text-slate-900">0</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                       <Users size={16} className="text-slate-400" />
+                       <span className="text-sm font-bold text-slate-900">0</span>
+                    </div>
+                  </div>
+
+                  {/* Bio */}
+                  <p className="text-slate-600 text-sm mt-4 leading-normal">
+                    {currentUser?.bio || "Hey, I am using SINCODE."}
+                  </p>
+                </div>
               </div>
 
-              {/* Menu Options */}
-              <div className="glass rounded-[2.5rem] overflow-hidden shadow-2xl border-white/5">
-                 {[
-                   { icon: ShieldCheck, label: 'Elite Verification', sub: 'Unlock worldwide earnings & private perks', color: 'text-blue-400', bg: 'bg-blue-600/10' },
-                   { icon: CreditCard, label: 'Wallet & Payouts', sub: 'Instant Naira withdrawals to local banks', color: 'text-blue-400', bg: 'bg-blue-600/10' },
-                   { icon: Bell, label: 'Elite Alerts', sub: 'New tips, subs, and creator syncs', color: 'text-blue-400', bg: 'bg-blue-600/10' },
-                   { icon: Settings, label: 'Advanced Controls', sub: 'Privacy mode, NDPR vaults, security', color: 'text-blue-400', bg: 'bg-blue-600/10' },
-                 ].map((item, i) => (
-                    <button key={i} className="w-full flex items-center justify-between p-6 hover:bg-white/5 transition-all group border-b border-white/5 last:border-0">
-                       <div className="flex items-center gap-6 text-left">
-                          <div className={cn("p-4 rounded-[1.2rem] transition-all group-hover:scale-110 shadow-xl", item.bg, item.color)}>
-                             <item.icon size={26} />
-                          </div>
-                          <div>
-                             <h4 className="text-base font-display font-black text-white uppercase tracking-tight italic">{item.label}</h4>
-                             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mt-1.5">{item.sub}</p>
-                          </div>
-                       </div>
-                       <ChevronRight size={20} className="text-slate-700 group-hover:text-blue-400 transition-colors" />
+              {/* Tabs */}
+              <div className="mt-10 border-b border-slate-100">
+                 <div className="flex">
+                    <button className="flex-1 py-4 text-center font-bold text-sm text-blue-500 border-b-2 border-blue-500">
+                       Posts
                     </button>
-                 ))}
+                    <button className="flex-1 py-4 text-center font-bold text-sm text-slate-500">
+                       Media
+                    </button>
+                 </div>
               </div>
 
-              <button 
-                onClick={handleLogout}
-                className="w-full glass text-slate-500 hover:text-red-400 font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 active:bg-red-500/10 transition-all uppercase tracking-[0.4em] text-[10px] mb-10 border-white/5"
-              >
-                 <LogOut size={22} />
-                 Disconnect Sessions
-              </button>
+              {/* Timeline Search & Filter */}
+              <div className="p-4 flex gap-2">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" size={18} />
+                  <input 
+                    type="text" 
+                    placeholder="Search Timeline" 
+                    className="w-full bg-slate-50 border border-slate-100 rounded-md py-2.5 pl-10 pr-4 text-sm focus:outline-hidden"
+                  />
+                </div>
+                <button className="p-2.5 bg-slate-50 border border-slate-100 rounded-md text-blue-400">
+                   <TrendingUp size={18} />
+                </button>
+                <button className="p-2.5 bg-slate-50 border border-slate-100 rounded-md text-slate-400">
+                   <Settings size={18} strokeWidth={1.5} />
+                </button>
+              </div>
+
+              {/* Empty State */}
+              <div className="mt-12 py-20 flex flex-col items-center justify-center text-center px-8">
+                 <p className="text-slate-500 text-sm font-medium">This user has not posted anything yet.</p>
+              </div>
+
+              {/* Original Settings Menu Options (Integrated at bottom or separate tab) */}
+              <div className="mt-10 px-4 pb-12 space-y-2">
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2 mb-4">Account Control</p>
+                 <button 
+                  onClick={handleLogout}
+                  className="w-full bg-slate-50 text-slate-500 hover:text-red-500 font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-colors text-xs uppercase tracking-widest border border-slate-100"
+                >
+                   <LogOut size={18} />
+                   Logout Session
+                </button>
+              </div>
             </motion.div>
           )}
 
