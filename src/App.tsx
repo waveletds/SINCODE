@@ -18,7 +18,22 @@ import {
   LogOut,
   ChevronRight,
   TrendingUp,
-  Award
+  Award,
+  Heart,
+  Eye,
+  Play,
+  EyeOff,
+  HelpCircle,
+  MoreHorizontal,
+  Users,
+  Image as ImageIcon,
+  List,
+  Bookmark,
+  UserPlus,
+  LifeBuoy,
+  FileText,
+  Shield,
+  UserCircle
 } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { cn, formatNaira } from '@/src/lib/utils';
@@ -28,11 +43,10 @@ import { initializePayment } from '@/src/lib/monnify';
 
 const Navbar = ({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: (t: string) => void }) => {
   const tabs = [
-    { id: 'home', icon: Home, label: 'Feed' },
-    { id: 'discover', icon: Search, label: 'Explore' },
-    { id: 'create', icon: PlusSquare, label: 'Post' },
-    { id: 'messages', icon: MessageCircle, label: 'Chat' },
-    { id: 'profile', icon: User, label: 'Me' },
+    { id: 'home', icon: Home, label: 'Home' },
+    { id: 'discover', icon: Search, label: 'Search' },
+    { id: 'messages', icon: MessageCircle, label: 'Messages' },
+    { id: 'profile', icon: Bell, label: 'Alerts' },
   ];
 
   return (
@@ -63,22 +77,28 @@ const Navbar = ({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: 
   );
 };
 
-const Header = () => {
+const Header = ({ onOpenMenu }: { onOpenMenu: () => void }) => {
   return (
-    <header className="sticky top-0 z-40 glass border-b-0 border-x-0 border-t-0 px-6 py-5 flex items-center justify-between bg-black/40">
+    <header className="sticky top-0 z-40 glass border-b-0 border-x-0 border-t-0 px-4 py-3 flex items-center justify-between bg-black/40">
       <div className="flex items-center gap-3">
-        <span className="text-3xl font-display font-black tracking-tighter text-white italic">SINCODE</span>
-        <div className="bg-blue-600/10 text-blue-400 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-[0.2em] border border-blue-500/20">
-          ELITE
-        </div>
-      </div>
-      <div className="flex items-center gap-5">
-        <button className="relative p-2 text-slate-400 hover:text-blue-400 transition-colors">
-          <Bell size={24} />
-          <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-black"></span>
+        <button onClick={onOpenMenu} className="relative active:scale-95 transition-transform">
+          <div className="w-10 h-10 rounded-full glass border border-white/10 p-0.5">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde" className="w-full h-full rounded-full" alt="User" />
+          </div>
+          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-black rounded-full shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
         </button>
-        <div className="w-10 h-10 rounded-2xl bg-linear-to-tr from-blue-600 to-navy-800 overflow-hidden border border-white/10 shadow-xl p-0.5">
-          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde" className="w-full h-full rounded-[0.8rem]" alt="User" />
+      </div>
+      
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
+         <Heart size={28} className="text-blue-500 fill-blue-500" strokeWidth={1.5} />
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button className="text-slate-400 p-1.5 glass rounded-xl border-white/5">
+          <HelpCircle size={18} />
+        </button>
+        <div className="bg-navy-800 border border-white/5 py-1.5 px-4 rounded-xl flex items-center gap-2 shadow-lg">
+           <span className="text-[11px] font-black text-white naira-glow tracking-tighter">₦12,450</span>
         </div>
       </div>
     </header>
@@ -101,7 +121,7 @@ const FeedPage = () => {
       customerEmail: "fan@sincode.ng",
       paymentReference: `SC-${Date.now()}`,
       paymentDescription: description,
-      onComplete: (res) => {
+      onComplete: (res: any) => {
         alert(`Payment successful! Reference: ${res.transactionReference}`);
       },
       onClose: () => {
@@ -111,91 +131,126 @@ const FeedPage = () => {
   };
 
   return (
-    <div className="space-y-8 pb-20">
-      {/* Stories/Top Creators */}
-      <section className="px-6 py-6 overflow-hidden">
-        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6 pl-1">Elite Subscriptions</h3>
-        <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
+    <div className="space-y-6 pb-20">
+      {/* Pills Navigation */}
+      <div className="px-5 pt-4 flex items-center justify-between">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1">
+           {['All', 'Subscribed', 'For You', 'Trending'].map((tab, i) => (
+              <button 
+                key={tab} 
+                className={cn(
+                  "px-6 py-2.5 rounded-full whitespace-nowrap text-xs font-black uppercase tracking-widest transition-all",
+                  i === 0 ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "glass text-slate-500 hover:text-white"
+                )}
+              >
+                {tab}
+              </button>
+           ))}
+        </div>
+      </div>
+
+      {/* Title Section */}
+      <div className="px-6 flex items-center justify-between">
+         <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] pl-1">Made For You</h3>
+         <button className="text-slate-400"><Settings size={18} /></button>
+      </div>
+
+      {/* Stories Carousel */}
+      <section className="px-6">
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
           {creators.map((c) => (
-            <div key={c.id} className="flex flex-col items-center gap-2.5 shrink-0 group cursor-pointer">
-              <div className={cn(
-                "w-20 h-20 rounded-3xl p-0.5 border-2 transition-all duration-300 group-hover:scale-105",
-                c.active ? "border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.4)]" : "border-navy-800"
-              )}>
-                <img src={c.image} className="w-full h-full rounded-[1.4rem] object-cover" alt={c.name} />
+            <div key={c.id} className="relative aspect-[2/3] w-36 rounded-3xl overflow-hidden glass border-white/5 shrink-0 group cursor-pointer transition-transform hover:scale-[1.02]">
+              <img 
+                src={c.image} 
+                className={cn("w-full h-full object-cover grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500", !c.active && "blur-xl")} 
+                alt={c.name} 
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-transparent flex flex-col justify-end p-4">
+                 <div className="flex items-center gap-2 mb-1">
+                    <div className="w-5 h-5 rounded-lg glass border border-blue-500/30 overflow-hidden">
+                       <img src={c.image} className="w-full h-full object-cover" alt="" />
+                    </div>
+                    <span className="text-[9px] font-black text-white uppercase tracking-tighter truncate">@{c.handle}</span>
+                 </div>
               </div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter truncate w-20 text-center group-hover:text-blue-400">@{c.handle}</span>
+              <div className="absolute inset-0 flex items-center justify-center">
+                 {c.active ? (
+                    <div className="w-8 h-8 glass rounded-full flex items-center justify-center text-white pl-0.5">
+                       <Play size={16} fill="currentColor" />
+                    </div>
+                 ) : (
+                    <div className="w-8 h-8 glass rounded-full flex items-center justify-center text-white">
+                       <EyeOff size={16} />
+                    </div>
+                 )}
+              </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Featured Banner */}
-      <section className="px-6">
-        <div className="relative h-64 premium-card overflow-hidden">
-          <img 
-            src="https://images.unsplash.com/photo-1520127871002-144c75fe4e0d?w=800&q=80" 
-            className="w-full h-full object-cover opacity-20 mix-blend-overlay scale-110" 
-            alt="Feature" 
-          />
-          <div className="absolute inset-0 p-10 flex flex-col justify-end bg-linear-to-t from-black via-navy-900/40 to-transparent">
-            <h2 className="text-4xl font-display font-black text-white mb-3 leading-[0.9] uppercase tracking-tighter italic">Lagos Hub:<br/>Now Streaming.</h2>
-            <p className="text-blue-400/80 text-xs font-black mb-8 tracking-[0.2em] uppercase">142 Creators currently live • 0% Deposit Fee</p>
-            <button className="bg-blue-600 hover:bg-blue-500 text-white font-black py-4 px-10 rounded-2xl text-[11px] uppercase w-fit active:scale-95 transition-all shadow-2xl shadow-blue-600/20 tracking-[0.2em]">
-              Enter the Hub
-            </button>
-          </div>
-        </div>
-      </section>
-
       {/* Feed Posts */}
-      <section className="space-y-12 px-6">
+      <section className="space-y-12">
         {[1, 2].map((post) => (
-          <div key={post} className="glass rounded-[3rem] overflow-hidden border-white/5 group">
-            <div className="p-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl glass p-0.5 overflow-hidden border-blue-500/10 group-hover:border-blue-500/30 transition-colors">
-                   <img src={`https://i.pravatar.cc/150?u=${post}`} className="w-full h-full object-cover rounded-[0.9rem]" alt="Avatar" />
+          <div key={post} className="bg-black/20 border-y border-white/5 py-6 space-y-5">
+            {/* Post Header */}
+            <div className="px-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/5">
+                   <img src={`https://i.pravatar.cc/150?u=${post + 10}`} className="w-full h-full object-cover" alt="Avatar" />
                 </div>
                 <div>
-                  <h3 className="text-base font-display font-black text-white tracking-tight uppercase italic underline decoration-blue-500/30 underline-offset-4">Influencer_NG_{post}</h3>
-                  <p className="text-[10px] text-blue-400 font-black uppercase tracking-[0.3em] mt-1">Platinum Verified</p>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-sm font-black text-white tracking-tight">TheLittleJui...</h3>
+                    <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                       <ShieldCheck size={10} className="text-white" strokeWidth={3} />
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-medium">@thelittlejui... • 6h</p>
                 </div>
               </div>
-              <button className="p-2 glass rounded-xl text-slate-500 hover:text-white transition-all active:scale-90">
-                 <Settings size={22} />
+              <button className="text-slate-500 p-2">
+                 <MoreHorizontal size={20} />
               </button>
             </div>
             
-            <div className="relative aspect-[4/5] bg-navy-950 flex items-center justify-center mx-1 rounded-[2.5rem] overflow-hidden mb-1">
-              <img src={`https://images.unsplash.com/photo-${post === 1 ? '1583121274602-3e2820c69888' : '1503342217505-b0a15ec3261c'}?w=800&q=80`} className="w-full h-full object-cover blur-3xl opacity-20 absolute scale-125" alt="Teaser" />
-              <div className="z-10 text-center px-12">
-                 <div className="w-20 h-20 glass rounded-3xl flex items-center justify-center mx-auto mb-8 text-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
-                   <ShieldCheck size={40} />
+            {/* Post Content */}
+            <div className="px-6 space-y-4">
+               <p className="text-sm text-slate-300 font-medium leading-relaxed">
+                  Dropped a new exclusive vibes in the vault! ⚡️ Lagos really setting the pace this weekend. Check the private feed for the full 15min drop. #LagosVibes #SincodeElite
+               </p>
+               
+               <div className="relative aspect-video rounded-2xl overflow-hidden glass border-white/5 group bg-navy-950">
+                 <img src={`https://images.unsplash.com/photo-${post === 1 ? '1544005313-94ddf0286df2' : '1515886657613-9f3515b0c78f'}?w=800&q=80`} className="w-full h-full object-cover blur-2xl opacity-40 absolute" alt="Teaser" />
+                 <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-black/40">
+                    <div className="w-14 h-14 glass rounded-full flex items-center justify-center text-white mb-4">
+                       <EyeOff size={24} />
+                    </div>
+                    <h4 className="text-lg font-black text-white uppercase italic tracking-tight mb-2">Locked Media</h4>
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-6">Subscription Required</p>
+                    <button 
+                      onClick={() => handlePayment(2500, "Unlock Content")}
+                      className="bg-blue-600 text-white font-black py-3 px-8 rounded-xl text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 active:scale-95 transition-all"
+                    >
+                      Unlock for ₦2,500
+                    </button>
                  </div>
-                 <h4 className="text-2xl font-display font-black text-white mb-3 uppercase tracking-tight italic">Elite Access</h4>
-                 <p className="text-xs text-slate-400 mb-10 font-medium leading-relaxed max-w-xs mx-auto">This catalog is restricted to members. Exclusive BTS from Lagos Fashion Week 2024.</p>
-                 <button 
-                  onClick={() => handlePayment(1500, `Unlock post by Creator_${post}`)}
-                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-3xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-2xl shadow-blue-600/30 uppercase text-xs tracking-widest"
-                 >
-                    Get Access for {formatNaira(1500)}
-                 </button>
-              </div>
+               </div>
             </div>
 
-            <div className="p-6 flex items-center justify-between bg-black/40 border-t border-white/5">
-               <div className="flex gap-8">
-                  <div className="flex items-center gap-2 text-slate-300">
-                     <span className="text-[13px] font-black italic tracking-tighter">❤️ 1.2k</span>
+            {/* Post Actions */}
+            <div className="px-6 flex items-center justify-between pointer-events-none opacity-40">
+               <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                     <Heart size={20} />
+                     <span className="text-xs font-black uppercase">1.2k</span>
                   </div>
-                  <div className="flex items-center gap-2 text-slate-300">
-                     <span className="text-[13px] font-black italic tracking-tighter">💬 48</span>
+                  <div className="flex items-center gap-2">
+                     <MessageCircle size={20} />
+                     <span className="text-xs font-black uppercase">48</span>
                   </div>
                </div>
-               <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-black text-blue-400 uppercase tracking-widest naira-glow">TIPS: ₦45k</span>
-               </div>
+               <div className="text-xs font-black text-blue-400 uppercase tracking-widest naira-glow italic">Premium Pool: ₦45k</div>
             </div>
           </div>
         ))}
@@ -205,35 +260,84 @@ const FeedPage = () => {
 };
 
 const AuthPage = ({ onLogin }: { onLogin: () => void }) => {
-  return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8 text-center relative overflow-hidden">
-       {/* Background accent */}
-       <div className="absolute top-0 -left-20 w-96 h-96 bg-blue-600/10 blur-[120px] pointer-events-none rounded-full"></div>
-       <div className="absolute bottom-0 -right-20 w-96 h-96 bg-navy-800/20 blur-[120px] pointer-events-none rounded-full"></div>
+  const teasers = [
+    { id: 1, image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80', active: true, title: 'BTS: Lagos Fashion Week' },
+    { id: 2, image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80', active: false, title: 'Private Studio Session' },
+    { id: 3, image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80', active: true, title: 'Exclusive Interview' },
+  ];
 
-       <div className="w-24 h-24 bg-blue-600 rounded-[2.5rem] flex items-center justify-center text-white font-display font-black text-5xl tracking-tighter mb-10 shadow-2xl shadow-blue-500/20 rotate-6 border-4 border-white/10 group hover:rotate-0 transition-transform cursor-pointer">
-          SC
+  return (
+    <div className="min-h-screen bg-black flex flex-col font-sans">
+       {/* Top Section: Branding & Logo */}
+       <div className="bg-navy-900 pt-12 pb-16 px-8 relative overflow-hidden flex flex-col items-center">
+          <div className="absolute top-0 inset-x-0 h-full bg-linear-to-b from-blue-600/5 to-transparent"></div>
+          
+          <div className="relative z-10 flex flex-col items-center">
+             <div className="relative mb-6">
+                <Heart size={80} className="text-white fill-white" strokeWidth={1} />
+                <div className="absolute inset-0 flex items-center justify-center">
+                   <div className="w-8 h-8 rounded-full bg-navy-900 flex items-center justify-center">
+                      <Eye size={18} className="text-blue-400" strokeWidth={3} />
+                   </div>
+                </div>
+             </div>
+             <h1 className="text-5xl font-display font-black text-white tracking-tight uppercase italic mb-2">SINCODE</h1>
+             <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.4em]">Elite Nigerian Creator Hub</p>
+          </div>
+
+          {/* Featured Teasers Grid */}
+          <div className="grid grid-cols-3 gap-3 w-full max-w-lg mt-12 relative z-20">
+             {teasers.map((t, i) => (
+                <div key={t.id} className={cn(
+                   "relative aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/10 group",
+                   i === 1 ? "scale-105 z-10 -rotate-1" : "rotate-1 opacity-80"
+                )}>
+                   <img src={t.image} className={cn("w-full h-full object-cover", !t.active && "blur-xl")} alt="Teaser" />
+                   <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                      {t.active ? (
+                         <div className="w-10 h-10 glass rounded-full flex items-center justify-center text-white pl-1">
+                            <Play size={20} fill="currentColor" />
+                         </div>
+                      ) : (
+                         <div className="w-10 h-10 glass rounded-full flex items-center justify-center text-white">
+                            <EyeOff size={20} />
+                         </div>
+                      )}
+                   </div>
+                   {t.active && (
+                      <div className="absolute top-2 left-2 flex items-center gap-1.5 glass px-2 py-0.5 rounded-full scale-75 origin-top-left">
+                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                         <span className="text-[9px] font-black uppercase text-white">Live</span>
+                      </div>
+                   )}
+                </div>
+             ))}
+          </div>
        </div>
-       <h1 className="text-6xl font-display font-black mb-3 tracking-tighter text-white uppercase italic scale-y-110">SINCODE</h1>
-       <p className="text-blue-400/80 mb-14 max-w-xs font-black tracking-[0.3em] text-[10px] uppercase">Monetize Your Talent, Keep More in Naija</p>
-       
-       <div className="w-full max-w-sm space-y-5 relative z-10">
-          <button 
-             onClick={onLogin}
-             className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-6 rounded-2xl shadow-2xl shadow-blue-600/10 active:scale-95 transition-all text-sm uppercase tracking-widest"
-          >
-             Creator Login
-          </button>
-          <button 
-             onClick={onLogin}
-             className="w-full glass text-white/90 font-black py-6 rounded-2xl active:scale-95 transition-all text-sm uppercase tracking-widest border-white/5 hover:bg-white/5"
-          >
-             Fan Entrance
-          </button>
-          <div className="pt-12">
-             <div className="flex items-center gap-4 justify-center opacity-40">
-                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                <p className="text-[9px] text-slate-500 uppercase tracking-widest font-black">75% Creator Split Protected • Secure via NDPR</p>
+
+       {/* Bottom Section: Actions */}
+       <div className="flex-1 bg-black p-8 flex flex-col items-center justify-center rounded-t-[3rem] -mt-10 relative z-30 shadow-[0_-20px_40px_rgba(0,0,0,0.8)] border-t border-white/5">
+          <div className="w-full max-w-sm space-y-4">
+             <button 
+                onClick={onLogin}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-2xl shadow-2xl shadow-blue-600/20 active:scale-95 transition-all text-sm uppercase tracking-widest"
+             >
+                Sign up
+             </button>
+             <button 
+                onClick={onLogin}
+                className="w-full glass text-white/90 font-black py-5 rounded-2xl active:scale-95 transition-all text-sm uppercase tracking-widest border-white/5 hover:bg-white/5"
+             >
+                Login
+             </button>
+             
+             <div className="pt-12 text-center opacity-40">
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-4">Secure Gateway • Lagos, Nigeria</p>
+                <div className="flex justify-center gap-6 text-slate-500">
+                   <Home size={18} />
+                   <Search size={18} />
+                   <MessageCircle size={18} />
+                </div>
              </div>
           </div>
        </div>
@@ -365,10 +469,92 @@ export default function App() {
     return <AuthPage onLogin={() => setIsLoggedIn(true)} />;
   }
 
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-black font-sans text-slate-200 pb-20 md:pb-0 md:pl-24">
-      <Header />
+      <Header onOpenMenu={() => setIsMenuOpen(true)} />
       
+      {/* Side Navigation Drawer */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMenuOpen(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60]"
+            />
+            <motion.div 
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 left-0 w-[85%] max-w-sm bg-navy-950 z-[70] shadow-2xl border-r border-white/5 flex flex-col"
+            >
+              <div className="p-8 pb-6 flex flex-col items-center text-center border-b border-white/5">
+                 <div className="relative mb-4">
+                    <div className="w-20 h-20 rounded-full glass border-2 border-blue-500/50 p-1">
+                       <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde" className="w-full h-full rounded-full" alt="User" />
+                    </div>
+                    <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-navy-950 rounded-full"></div>
+                 </div>
+                 <h3 className="text-xl font-display font-black text-white italic tracking-tighter">Tunde Olamide</h3>
+                 <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">@tunde_vibes</p>
+                 
+                 <div className="flex gap-10 mt-6">
+                    <div className="text-center">
+                       <p className="text-lg font-black text-white">1.2k</p>
+                       <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">Likes</p>
+                    </div>
+                    <div className="text-center">
+                       <p className="text-lg font-black text-white">2.4k</p>
+                       <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">Followers</p>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto py-4 scrollbar-hide">
+                 <div className="px-4 space-y-1">
+                    {[
+                      { icon: UserCircle, label: 'Profile' },
+                      { icon: Users, label: 'Subscriptions' },
+                      { icon: ImageIcon, label: 'Media Collection' },
+                      { icon: List, label: 'Lists' },
+                      { icon: Bookmark, label: 'Bookmarks' },
+                      { icon: MessageCircle, label: 'Messages' },
+                      { icon: Bell, label: 'Notifications' },
+                      { icon: UserPlus, label: 'Referrals' },
+                    ].map((item, i) => (
+                       <button key={i} className="w-full flex items-center gap-4 px-6 py-4 hover:bg-white/5 transition-all group rounded-2xl">
+                          <item.icon size={22} className="text-slate-500 group-hover:text-blue-400 transition-colors" />
+                          <span className="text-sm font-bold text-slate-300 group-hover:text-white uppercase tracking-widest">{item.label}</span>
+                       </button>
+                    ))}
+
+                    <div className="my-4 border-t border-white/5" />
+
+                    {[
+                      { icon: CreditCard, label: 'Add Payment Method' },
+                      { icon: ShieldCheck, label: 'Become A Creator' },
+                      { icon: HelpCircle, label: 'Contact Support' },
+                      { icon: LifeBuoy, label: 'Help Center' },
+                      { icon: FileText, label: 'Terms' },
+                      { icon: Shield, label: 'Privacy Policy' },
+                    ].map((item, i) => (
+                       <button key={i} className="w-full flex items-center gap-4 px-6 py-4 hover:bg-white/5 transition-all group rounded-2xl">
+                          <item.icon size={22} className="text-slate-500 group-hover:text-blue-400 transition-colors" />
+                          <span className="text-sm font-bold text-slate-300 group-hover:text-white uppercase tracking-widest">{item.label}</span>
+                       </button>
+                    ))}
+                 </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       <main className="max-w-2xl mx-auto md:max-w-3xl lg:max-w-5xl pt-4">
         <AnimatePresence mode="wait">
           {activeTab === 'home' && (
