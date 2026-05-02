@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { cn, formatNaira } from '@/src/lib/utils';
+import { initializePayment } from '@/src/lib/monnify';
 
 // --- Components ---
 
@@ -35,9 +36,9 @@ const Navbar = ({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: 
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t-0 px-2 py-3 flex justify-around items-center md:top-0 md:bottom-auto md:flex-col md:w-20 md:h-full md:border-r md:border-white/5">
-      <div className="hidden md:flex mb-8 items-center justify-center">
-        <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-slate-950 font-bold text-xl tracking-tighter">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t-0 px-2 py-3 flex justify-around items-center md:top-0 md:bottom-auto md:flex-col md:w-24 md:h-full md:border-r md:border-white/5 bg-navy-950/80">
+      <div className="hidden md:flex mb-12 items-center justify-center">
+        <div className="group w-14 h-14 bg-navy-800 rounded-2xl flex items-center justify-center text-blue-500 font-display font-black text-2xl tracking-tighter shadow-2xl border border-white/5 hover:border-blue-500/50 transition-all cursor-pointer">
           SC
         </div>
       </div>
@@ -49,12 +50,12 @@ const Navbar = ({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: 
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              "flex flex-col items-center gap-1 transition-all duration-300",
-              isActive ? "text-emerald-400 scale-110 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "text-slate-500 hover:text-slate-300"
+              "flex flex-col items-center gap-1.5 transition-all duration-300",
+              isActive ? "text-blue-400 scale-110 drop-shadow-[0_0_12px_rgba(59,130,246,0.5)]" : "text-slate-500 hover:text-slate-300"
             )}
           >
-            <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-            <span className="text-[10px] font-medium md:hidden">{tab.label}</span>
+            <Icon size={26} strokeWidth={isActive ? 2.5 : 2} />
+            <span className="text-[10px] font-bold uppercase tracking-widest md:hidden">{tab.label}</span>
           </button>
         );
       })}
@@ -64,20 +65,20 @@ const Navbar = ({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: 
 
 const Header = () => {
   return (
-    <header className="sticky top-0 z-40 glass border-b-0 border-x-0 border-t-0 px-4 py-4 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <span className="text-2xl font-black tracking-tighter text-white">SINCODE</span>
-        <div className="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest border border-emerald-500/20">
-          PRO
+    <header className="sticky top-0 z-40 glass border-b-0 border-x-0 border-t-0 px-6 py-5 flex items-center justify-between bg-black/40">
+      <div className="flex items-center gap-3">
+        <span className="text-3xl font-display font-black tracking-tighter text-white italic">SINCODE</span>
+        <div className="bg-blue-600/10 text-blue-400 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-[0.2em] border border-blue-500/20">
+          ELITE
         </div>
       </div>
-      <div className="flex items-center gap-4">
-        <button className="relative p-1.5 text-slate-400 hover:text-emerald-400 transition-colors">
-          <Bell size={22} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full border-2 border-slate-900"></span>
+      <div className="flex items-center gap-5">
+        <button className="relative p-2 text-slate-400 hover:text-blue-400 transition-colors">
+          <Bell size={24} />
+          <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-black"></span>
         </button>
-        <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-emerald-500 to-cyan-500 overflow-hidden border-2 border-white/10 shadow-lg">
-          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde" alt="User" />
+        <div className="w-10 h-10 rounded-2xl bg-linear-to-tr from-blue-600 to-navy-800 overflow-hidden border border-white/10 shadow-xl p-0.5">
+          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde" className="w-full h-full rounded-[0.8rem]" alt="User" />
         </div>
       </div>
     </header>
@@ -93,87 +94,107 @@ const FeedPage = () => {
     { id: 3, name: 'Lagos Model', handle: 'ekofinesse', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80', active: true },
   ]);
 
+  const handlePayment = (amount: number, description: string) => {
+    initializePayment({
+      amount,
+      customerName: "Test Fan",
+      customerEmail: "fan@sincode.ng",
+      paymentReference: `SC-${Date.now()}`,
+      paymentDescription: description,
+      onComplete: (res) => {
+        alert(`Payment successful! Reference: ${res.transactionReference}`);
+      },
+      onClose: () => {
+        console.log("Payment window closed");
+      }
+    });
+  };
+
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-8 pb-20">
       {/* Stories/Top Creators */}
-      <section className="px-4 py-4">
-        <div className="flex gap-5 overflow-x-auto pb-2 scrollbar-hide">
+      <section className="px-6 py-6 overflow-hidden">
+        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6 pl-1">Elite Subscriptions</h3>
+        <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
           {creators.map((c) => (
-            <div key={c.id} className="flex flex-col items-center gap-1.5 shrink-0">
+            <div key={c.id} className="flex flex-col items-center gap-2.5 shrink-0 group cursor-pointer">
               <div className={cn(
-                "w-16 h-16 rounded-[1.25rem] p-0.5 border-2",
-                c.active ? "border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.3)]" : "border-slate-800"
+                "w-20 h-20 rounded-3xl p-0.5 border-2 transition-all duration-300 group-hover:scale-105",
+                c.active ? "border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.4)]" : "border-navy-800"
               )}>
-                <img src={c.image} className="w-full h-full rounded-[1.1rem] object-cover" alt={c.name} />
+                <img src={c.image} className="w-full h-full rounded-[1.4rem] object-cover" alt={c.name} />
               </div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter truncate w-16 text-center">@{c.handle}</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter truncate w-20 text-center group-hover:text-blue-400">@{c.handle}</span>
             </div>
           ))}
         </div>
       </section>
 
       {/* Featured Banner */}
-      <section className="px-4">
-        <div className="relative h-56 glass rounded-[2rem] overflow-hidden shadow-2xl">
+      <section className="px-6">
+        <div className="relative h-64 premium-card overflow-hidden">
           <img 
             src="https://images.unsplash.com/photo-1520127871002-144c75fe4e0d?w=800&q=80" 
-            className="w-full h-full object-cover opacity-40 mix-blend-overlay" 
+            className="w-full h-full object-cover opacity-20 mix-blend-overlay scale-110" 
             alt="Feature" 
           />
-          <div className="absolute inset-0 p-8 flex flex-col justify-end bg-linear-to-t from-slate-950 via-slate-950/20 to-transparent">
-            <h2 className="text-3xl font-black text-white mb-2 leading-none uppercase tracking-tighter italic">Naija's #1 Creator Economy.</h2>
-            <p className="text-emerald-400/80 text-xs font-bold mb-6 tracking-widest uppercase">Fast payouts • 75% Creator Split Protected</p>
-            <button className="bg-white text-slate-950 font-black py-3 px-8 rounded-2xl text-[11px] uppercase w-fit active:scale-95 transition-all shadow-xl shadow-white/5 tracking-widest">
-              Join the Hub
+          <div className="absolute inset-0 p-10 flex flex-col justify-end bg-linear-to-t from-black via-navy-900/40 to-transparent">
+            <h2 className="text-4xl font-display font-black text-white mb-3 leading-[0.9] uppercase tracking-tighter italic">Lagos Hub:<br/>Now Streaming.</h2>
+            <p className="text-blue-400/80 text-xs font-black mb-8 tracking-[0.2em] uppercase">142 Creators currently live • 0% Deposit Fee</p>
+            <button className="bg-blue-600 hover:bg-blue-500 text-white font-black py-4 px-10 rounded-2xl text-[11px] uppercase w-fit active:scale-95 transition-all shadow-2xl shadow-blue-600/20 tracking-[0.2em]">
+              Enter the Hub
             </button>
           </div>
         </div>
       </section>
 
       {/* Feed Posts */}
-      <section className="space-y-8 px-4">
+      <section className="space-y-12 px-6">
         {[1, 2].map((post) => (
-          <div key={post} className="glass rounded-[2rem] overflow-hidden shadow-xl border-white/5">
-            <div className="p-5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl glass p-0.5 overflow-hidden">
+          <div key={post} className="glass rounded-[3rem] overflow-hidden border-white/5 group">
+            <div className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl glass p-0.5 overflow-hidden border-blue-500/10 group-hover:border-blue-500/30 transition-colors">
                    <img src={`https://i.pravatar.cc/150?u=${post}`} className="w-full h-full object-cover rounded-[0.9rem]" alt="Avatar" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-white tracking-tight uppercase">Chioma_Lux_{post}</h3>
-                  <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">Verified Portfolio</p>
+                  <h3 className="text-base font-display font-black text-white tracking-tight uppercase italic underline decoration-blue-500/30 underline-offset-4">Influencer_NG_{post}</h3>
+                  <p className="text-[10px] text-blue-400 font-black uppercase tracking-[0.3em] mt-1">Platinum Verified</p>
                 </div>
               </div>
-              <button className="text-slate-500 hover:text-white transition-colors">
-                 <Settings size={20} />
+              <button className="p-2 glass rounded-xl text-slate-500 hover:text-white transition-all active:scale-90">
+                 <Settings size={22} />
               </button>
             </div>
             
-            <div className="relative aspect-[4/5] bg-slate-900 flex items-center justify-center mx-1 rounded-[1.5rem] overflow-hidden mb-1">
-              <img src={`https://images.unsplash.com/photo-${post === 1 ? '1583121274602-3e2820c69888' : '1503342217505-b0a15ec3261c'}?w=800&q=80`} className="w-full h-full object-cover blur-3xl opacity-30 absolute" alt="Teaser" />
-              <div className="z-10 text-center px-10">
-                 <div className="w-16 h-16 glass rounded-2xl flex items-center justify-center mx-auto mb-6 text-emerald-400">
-                   <ShieldCheck size={32} />
+            <div className="relative aspect-[4/5] bg-navy-950 flex items-center justify-center mx-1 rounded-[2.5rem] overflow-hidden mb-1">
+              <img src={`https://images.unsplash.com/photo-${post === 1 ? '1583121274602-3e2820c69888' : '1503342217505-b0a15ec3261c'}?w=800&q=80`} className="w-full h-full object-cover blur-3xl opacity-20 absolute scale-125" alt="Teaser" />
+              <div className="z-10 text-center px-12">
+                 <div className="w-20 h-20 glass rounded-3xl flex items-center justify-center mx-auto mb-8 text-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
+                   <ShieldCheck size={40} />
                  </div>
-                 <h4 className="text-xl font-black text-white mb-2 uppercase tracking-tight">Locked Content</h4>
-                 <p className="text-xs text-slate-400 mb-8 font-medium">Exclusively for my top fans. Behind the scenes from Lagos Fashion Week. 🇳🇬</p>
-                 <button className="w-full bg-emerald-500 text-slate-950 font-black py-4 rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-emerald-500/20 uppercase text-xs tracking-widest">
-                    Unlock for {formatNaira(1500)}
+                 <h4 className="text-2xl font-display font-black text-white mb-3 uppercase tracking-tight italic">Elite Access</h4>
+                 <p className="text-xs text-slate-400 mb-10 font-medium leading-relaxed max-w-xs mx-auto">This catalog is restricted to members. Exclusive BTS from Lagos Fashion Week 2024.</p>
+                 <button 
+                  onClick={() => handlePayment(1500, `Unlock post by Creator_${post}`)}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-3xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-2xl shadow-blue-600/30 uppercase text-xs tracking-widest"
+                 >
+                    Get Access for {formatNaira(1500)}
                  </button>
               </div>
             </div>
 
-            <div className="p-5 flex items-center justify-between bg-slate-900/40">
-               <div className="flex gap-6">
+            <div className="p-6 flex items-center justify-between bg-black/40 border-t border-white/5">
+               <div className="flex gap-8">
                   <div className="flex items-center gap-2 text-slate-300">
-                     <span className="text-xs font-bold italic">❤️ 1.2k</span>
+                     <span className="text-[13px] font-black italic tracking-tighter">❤️ 1.2k</span>
                   </div>
                   <div className="flex items-center gap-2 text-slate-300">
-                     <span className="text-xs font-bold italic">💬 48</span>
+                     <span className="text-[13px] font-black italic tracking-tighter">💬 48</span>
                   </div>
                </div>
                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest naira-glow">Tips: ₦45k</span>
+                  <span className="text-[11px] font-black text-blue-400 uppercase tracking-widest naira-glow">TIPS: ₦45k</span>
                </div>
             </div>
           </div>
@@ -185,28 +206,35 @@ const FeedPage = () => {
 
 const AuthPage = ({ onLogin }: { onLogin: () => void }) => {
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
-       <div className="w-20 h-20 bg-emerald-500 rounded-[2rem] flex items-center justify-center text-slate-950 font-black text-4xl tracking-tighter mb-8 shadow-2xl shadow-emerald-500/20 rotate-3">
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8 text-center relative overflow-hidden">
+       {/* Background accent */}
+       <div className="absolute top-0 -left-20 w-96 h-96 bg-blue-600/10 blur-[120px] pointer-events-none rounded-full"></div>
+       <div className="absolute bottom-0 -right-20 w-96 h-96 bg-navy-800/20 blur-[120px] pointer-events-none rounded-full"></div>
+
+       <div className="w-24 h-24 bg-blue-600 rounded-[2.5rem] flex items-center justify-center text-white font-display font-black text-5xl tracking-tighter mb-10 shadow-2xl shadow-blue-500/20 rotate-6 border-4 border-white/10 group hover:rotate-0 transition-transform cursor-pointer">
           SC
        </div>
-       <h1 className="text-5xl font-black mb-2 tracking-tighter text-white uppercase">SINCODE</h1>
-       <p className="text-emerald-400 mb-10 max-w-xs font-bold tracking-widest text-[10px] uppercase">Monetize Your Talent, Keep More in Naija</p>
+       <h1 className="text-6xl font-display font-black mb-3 tracking-tighter text-white uppercase italic scale-y-110">SINCODE</h1>
+       <p className="text-blue-400/80 mb-14 max-w-xs font-black tracking-[0.3em] text-[10px] uppercase">Monetize Your Talent, Keep More in Naija</p>
        
-       <div className="w-full max-w-sm space-y-4">
+       <div className="w-full max-w-sm space-y-5 relative z-10">
           <button 
              onClick={onLogin}
-             className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-5 rounded-2xl shadow-lg shadow-emerald-500/10 active:scale-95 transition-all text-lg"
+             className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-6 rounded-2xl shadow-2xl shadow-blue-600/10 active:scale-95 transition-all text-sm uppercase tracking-widest"
           >
-             Continue with Creator Hub
+             Creator Login
           </button>
           <button 
              onClick={onLogin}
-             className="w-full glass text-white font-bold py-5 rounded-2xl active:scale-95 transition-all text-lg"
+             className="w-full glass text-white/90 font-black py-6 rounded-2xl active:scale-95 transition-all text-sm uppercase tracking-widest border-white/5 hover:bg-white/5"
           >
-             Fan Login
+             Fan Entrance
           </button>
-          <div className="pt-8">
-             <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Secure Verification Powered by NDPR Compliance</p>
+          <div className="pt-12">
+             <div className="flex items-center gap-4 justify-center opacity-40">
+                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                <p className="text-[9px] text-slate-500 uppercase tracking-widest font-black">75% Creator Split Protected • Secure via NDPR</p>
+             </div>
           </div>
        </div>
     </div>
@@ -214,63 +242,116 @@ const AuthPage = ({ onLogin }: { onLogin: () => void }) => {
 };
 
 const CreatorDashboard = () => {
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [banks, setBanks] = useState<any[]>([]);
+  const [isLinking, setIsLinking] = useState(false);
+
+  useEffect(() => {
+    const fetchBanks = async () => {
+      try {
+        const res = await fetch("/api/monnify/banks");
+        const data = await res.json();
+        if (data.requestSuccessful) {
+          setBanks(data.responseBody);
+        }
+      } catch (e) {
+        console.error("Failed to load banks");
+      }
+    };
+    fetchBanks();
+  }, []);
+
+  const handleWithdrawal = async () => {
+    setIsWithdrawing(true);
+    try {
+      const response = await fetch("/api/monnify/transfer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: 45000,
+          destinationBankCode: "058", // GTB for demo
+          destinationAccountNumber: "0123456789",
+          narration: "SINCODE Creator Payout",
+        }),
+      });
+      const data = await response.json();
+      if (data.requestSuccessful) {
+        alert("Withdrawal successful! Funds are on the way.");
+      } else {
+        alert(`Withdrawal failed: ${data.responseMessage || "Unknown error"}`);
+      }
+    } catch (error) {
+      alert("Network error occurred during withdrawal.");
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
   return (
-    <div className="p-4 space-y-8 pb-20">
+    <div className="p-6 space-y-10 pb-20">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-black uppercase tracking-tighter italic">Creator Hub</h2>
-        <div className="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest border border-emerald-500/20">Verified</div>
+        <h2 className="text-4xl font-display font-black uppercase tracking-tighter italic">Creator Hub</h2>
+        <div className="bg-blue-600/10 text-blue-400 text-[10px] font-black px-4 py-1.5 rounded-xl uppercase tracking-widest border border-blue-500/20">Elite Verified</div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="glass p-6 rounded-[2rem] shadow-xl">
-           <p className="text-[10px] font-black text-slate-500 uppercase mb-2 tracking-widest leading-none">Total Payouts</p>
-           <p className="text-2xl font-black naira-glow text-white tracking-tighter">{formatNaira(450500)}</p>
+      <div className="grid grid-cols-2 gap-6">
+        <div className="premium-card !p-6 shadow-[0_0_40px_rgba(59,130,246,0.05)]">
+           <p className="text-[10px] font-black text-slate-500 uppercase mb-3 tracking-[0.2em] leading-none">Total Payouts</p>
+           <p className="text-2xl font-black text-white tracking-tighter naira-glow">{formatNaira(450500)}</p>
         </div>
-        <div className="glass p-6 rounded-[2rem] shadow-xl">
-           <p className="text-[10px] font-black text-slate-500 uppercase mb-2 tracking-widest leading-none">Active Subs</p>
+        <div className="premium-card !p-6 shadow-[0_0_40px_rgba(59,130,246,0.05)]">
+           <p className="text-[10px] font-black text-slate-500 uppercase mb-3 tracking-[0.2em] leading-none">Elite Subs</p>
            <p className="text-2xl font-black text-white tracking-tighter">128</p>
         </div>
       </div>
 
-      <section className="space-y-4">
-        <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] pl-1">Recent Activity</h3>
+      <section className="space-y-6">
+        <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] pl-1">Recent Activity</h3>
         {[1, 2, 3].map(i => (
-           <div key={i} className="glass p-5 rounded-[1.5rem] flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer">
-              <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/10">
-                    <TrendingUp size={24} />
+           <div key={i} className="glass p-6 rounded-[2rem] flex items-center justify-between hover:bg-navy-800 transition-all cursor-pointer group border-white/5">
+              <div className="flex items-center gap-5">
+                 <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/10 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                    <TrendingUp size={28} />
                  </div>
                  <div>
-                    <p className="text-sm font-black text-white italic">New Subscription</p>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">@{['wiz_kid', 'davido_fan', 'tiwa_wa'][i-1]} • Level 1</p>
+                    <p className="text-base font-display font-black text-white italic tracking-tight">New Subscription</p>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">@{['wiz_kid', 'davido_fan', 'tiwa_wa'][i-1]} • Level 1</p>
                  </div>
               </div>
-              <p className="text-sm font-black text-emerald-400 naira-glow">+{formatNaira(3500)}</p>
+              <p className="text-md font-black text-blue-400 naira-glow">+{formatNaira(3500)}</p>
            </div>
         ))}
       </section>
 
-      <button className="w-full bg-emerald-500 text-slate-950 font-black py-5 rounded-[1.5rem] shadow-2xl flex items-center justify-center gap-3 uppercase text-sm tracking-widest active:scale-[0.98] transition-all">
-         <PlusSquare size={24} />
-         Create New Content
+      <button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-6 rounded-[2.5rem] shadow-2xl shadow-blue-600/20 flex items-center justify-center gap-4 uppercase text-xs tracking-[0.3em] active:scale-[0.98] transition-all">
+         <PlusSquare size={28} />
+         Drop New Content
       </button>
 
-      <div className="glass rounded-[2.5rem] p-8 text-white overflow-hidden relative shadow-2xl border-white/5">
+      <div className="premium-card !p-10 relative overflow-hidden group shadow-blue-600/5">
          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-2">
-               <h3 className="font-black text-xl italic tracking-tight uppercase">Quick Withdrawal</h3>
-               <span className="text-[9px] bg-slate-800 px-2 py-1 rounded text-slate-300 font-black uppercase tracking-widest">Instant Pay</span>
+            <div className="flex items-center justify-between mb-8">
+               <h3 className="font-black text-2xl italic tracking-tighter uppercase text-white scale-y-110">Withdrawal</h3>
+               <span className="text-[9px] glass px-3 py-1.5 rounded-lg text-blue-400 font-black uppercase tracking-[0.25em] border-blue-500/20">Instant Pay</span>
             </div>
-            <div className="flex items-center gap-4 bg-slate-950/50 p-4 rounded-2xl border border-white/5 mb-6">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center font-black italic text-white shadow-lg">UBA</div>
+            
+            <div className="bg-black/60 p-6 rounded-[1.5rem] border border-white/5 mb-10 flex items-center gap-5 group-hover:bg-black transition-colors">
+                <div className="w-12 h-12 bg-blue-700 rounded-xl flex items-center justify-center font-black italic text-white shadow-xl">UBA</div>
                 <div className="flex-1">
-                    <p className="text-sm font-bold text-white">United Bank for Africa</p>
-                    <p className="text-[10px] text-slate-500 font-bold tracking-widest uppercase">**** 5821 • SAVINGS</p>
+                    <p className="text-md font-bold text-white tracking-tight uppercase italic">United Bank for Africa</p>
+                    <p className="text-[10px] text-slate-500 font-black tracking-[0.2em] uppercase mt-1">**** 5821 • ELITE SAVINGS</p>
                 </div>
             </div>
-            <button className="w-full bg-white text-slate-950 font-black py-4 rounded-2xl text-[11px] uppercase tracking-[0.2em] shadow-xl hover:bg-slate-100 transition-all">Send ₦45,000 to Bank</button>
+
+            <button 
+              onClick={handleWithdrawal}
+              disabled={isWithdrawing}
+              className="w-full bg-white hover:bg-blue-50 text-slate-950 font-black py-5 rounded-2xl text-[11px] uppercase tracking-[0.4em] shadow-2xl transition-all disabled:opacity-50 active:scale-95"
+            >
+              {isWithdrawing ? "SYNCING FUNDS..." : "Send ₦45,000 to Bank"}
+            </button>
          </div>
-         <CreditCard size={160} className="absolute -bottom-12 -right-12 text-white/5 rotate-12 pointer-events-none" />
+         <CreditCard size={180} className="absolute -bottom-16 -right-16 text-white/5 rotate-12 pointer-events-none group-hover:text-blue-500/10 transition-colors duration-700" />
       </div>
     </div>
   );
@@ -285,10 +366,10 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-slate-200 pb-20 md:pb-0 md:pl-20">
+    <div className="min-h-screen bg-black font-sans text-slate-200 pb-20 md:pb-0 md:pl-24">
       <Header />
       
-      <main className="max-w-xl mx-auto md:max-w-2xl lg:max-w-4xl pt-4">
+      <main className="max-w-2xl mx-auto md:max-w-3xl lg:max-w-5xl pt-4">
         <AnimatePresence mode="wait">
           {activeTab === 'home' && (
             <motion.div
@@ -321,52 +402,52 @@ export default function App() {
               className="p-6 space-y-10"
             >
               {/* Profile Header */}
-              <div className="glass rounded-[2.5rem] p-8 shadow-2xl flex flex-col items-center text-center relative overflow-hidden">
-                 <div className="absolute top-0 inset-x-0 h-32 bg-linear-to-b from-emerald-500/10 to-transparent blur-3xl opacity-30"></div>
-                 <div className="w-24 h-24 rounded-2xl glass p-1 shadow-2xl overflow-hidden relative z-10 mb-6 group cursor-pointer hover:scale-105 active:scale-95 transition-all">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde" className="w-full h-full object-cover rounded-[1.2rem]" alt="User" />
+              <div className="premium-card !p-10 flex flex-col items-center text-center relative overflow-hidden group">
+                 <div className="absolute top-0 inset-x-0 h-40 bg-linear-to-b from-blue-600/10 to-transparent blur-3xl opacity-50 group-hover:opacity-70 transition-opacity"></div>
+                 <div className="w-28 h-28 rounded-3xl glass p-1 shadow-2xl overflow-hidden relative z-10 mb-8 transition-transform group-hover:scale-[1.02]">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde" className="w-full h-full object-cover rounded-[1.4rem]" alt="User" />
                  </div>
-                 <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">Tunde Olamide</h2>
-                 <p className="text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-8">@tunde_vibes • Established 2024</p>
+                 <h2 className="text-3xl font-display font-black text-white uppercase italic tracking-tighter">Tunde Olamide</h2>
+                 <p className="text-blue-400 text-[11px] font-black uppercase tracking-[0.4em] mb-10">@tunde_vibes • Established 2024</p>
                  
-                 <div className="grid grid-cols-2 gap-4 w-full">
-                    <div className="bg-slate-900/50 border border-white/5 p-5 rounded-[1.5rem]">
-                       <p className="text-[9px] text-slate-500 font-black uppercase mb-2 tracking-[0.2em]">Wallet Balance</p>
-                       <p className="text-xl font-black text-white naira-glow tracking-tighter">{formatNaira(12450)}</p>
+                 <div className="grid grid-cols-2 gap-6 w-full">
+                    <div className="bg-black/60 border border-white/5 p-6 rounded-[2rem] backdrop-blur-md">
+                       <p className="text-[10px] text-slate-500 font-black uppercase mb-3 tracking-[0.3em]">Wallet</p>
+                       <p className="text-2xl font-black text-white naira-glow tracking-tighter">{formatNaira(12450)}</p>
                     </div>
-                    <div className="bg-slate-900/50 border border-white/5 p-5 rounded-[1.5rem]">
-                       <p className="text-[9px] text-slate-500 font-black uppercase mb-2 tracking-[0.2em]">Connections</p>
-                       <p className="text-xl font-black text-white tracking-tighter">24 Creators</p>
+                    <div className="bg-black/60 border border-white/5 p-6 rounded-[2rem] backdrop-blur-md">
+                       <p className="text-[10px] text-slate-500 font-black uppercase mb-3 tracking-[0.3em]">Network</p>
+                       <p className="text-2xl font-black text-white tracking-tighter">24 Creators</p>
                     </div>
                  </div>
               </div>
 
               {/* Menu Options */}
-              <div className="glass rounded-[2rem] overflow-hidden shadow-2xl">
+              <div className="glass rounded-[2.5rem] overflow-hidden shadow-2xl border-white/5">
                  {[
-                   { icon: ShieldCheck, label: 'Creator Verification', sub: 'Unlock full earnings & premium features', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-                   { icon: CreditCard, label: 'Wallet & Payouts', sub: 'Instant Naira withdrawals to local banks', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-                   { icon: Bell, label: 'In-app Notifications', sub: 'New tips, subs, and creator alerts', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-                   { icon: Settings, label: 'Advanced Settings', sub: 'Privacy mode, NDPR controls, security', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+                   { icon: ShieldCheck, label: 'Elite Verification', sub: 'Unlock worldwide earnings & private perks', color: 'text-blue-400', bg: 'bg-blue-600/10' },
+                   { icon: CreditCard, label: 'Wallet & Payouts', sub: 'Instant Naira withdrawals to local banks', color: 'text-blue-400', bg: 'bg-blue-600/10' },
+                   { icon: Bell, label: 'Elite Alerts', sub: 'New tips, subs, and creator syncs', color: 'text-blue-400', bg: 'bg-blue-600/10' },
+                   { icon: Settings, label: 'Advanced Controls', sub: 'Privacy mode, NDPR vaults, security', color: 'text-blue-400', bg: 'bg-blue-600/10' },
                  ].map((item, i) => (
-                    <button key={i} className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-all group border-b border-white/5 last:border-0">
-                       <div className="flex items-center gap-5 text-left">
-                          <div className={cn("p-3 rounded-2xl transition-transform group-hover:scale-110", item.bg, item.color)}>
-                             <item.icon size={22} />
+                    <button key={i} className="w-full flex items-center justify-between p-6 hover:bg-white/5 transition-all group border-b border-white/5 last:border-0">
+                       <div className="flex items-center gap-6 text-left">
+                          <div className={cn("p-4 rounded-[1.2rem] transition-all group-hover:scale-110 shadow-xl", item.bg, item.color)}>
+                             <item.icon size={26} />
                           </div>
                           <div>
-                             <h4 className="text-sm font-black text-white uppercase tracking-tight italic">{item.label}</h4>
-                             <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest leading-none mt-1">{item.sub}</p>
+                             <h4 className="text-base font-display font-black text-white uppercase tracking-tight italic">{item.label}</h4>
+                             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mt-1.5">{item.sub}</p>
                           </div>
                        </div>
-                       <ChevronRight size={18} className="text-slate-700 group-hover:text-emerald-400 transition-colors" />
+                       <ChevronRight size={20} className="text-slate-700 group-hover:text-blue-400 transition-colors" />
                     </button>
                  ))}
               </div>
 
-              <button className="w-full glass text-slate-400 font-black py-5 rounded-[1.5rem] flex items-center justify-center gap-3 active:bg-red-500/10 active:text-red-400 transition-all uppercase tracking-widest text-xs mb-10">
-                 <LogOut size={20} />
-                 Sign Out from SINCODE
+              <button className="w-full glass text-slate-500 hover:text-red-400 font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 active:bg-red-500/10 transition-all uppercase tracking-[0.4em] text-[10px] mb-10 border-white/5">
+                 <LogOut size={22} />
+                 Disconnect Sessions
               </button>
             </motion.div>
           )}

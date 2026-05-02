@@ -83,6 +83,80 @@ async function startServer() {
     res.sendStatus(200);
   });
 
+  // Monnify: Get Banks
+  app.get("/api/monnify/banks", async (req, res) => {
+    try {
+      const accessToken = await getMonnifyAccessToken();
+      const baseUrl = process.env.MONNIFY_BASE_URL;
+
+      const response = await fetch(`${baseUrl}/api/v1/banks`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch banks" });
+    }
+  });
+
+  // Monnify: Validate Account
+  app.get("/api/monnify/validate-account", async (req, res) => {
+    const { accountNumber, bankCode } = req.query;
+    try {
+      const accessToken = await getMonnifyAccessToken();
+      const baseUrl = process.env.MONNIFY_BASE_URL;
+
+      const response = await fetch(
+        `${baseUrl}/api/v1/disbursements/account/validate?accountNumber=${accountNumber}&bankCode=${bankCode}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to validate account" });
+    }
+  });
+
+  // Monnify: Initiate Transfer (Payout)
+  app.post("/api/monnify/transfer", async (req, res) => {
+    const { amount, reference, narration, destinationBankCode, destinationAccountNumber } = req.body;
+    try {
+      const accessToken = await getMonnifyAccessToken();
+      const baseUrl = process.env.MONNIFY_BASE_URL;
+
+      const response = await fetch(`${baseUrl}/api/v1/disbursements/single`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          amount,
+          reference: reference || `WDL-${Date.now()}`,
+          narration: narration || "SINCODE Payout",
+          destinationBankCode,
+          destinationAccountNumber,
+          currency: "NGN",
+          sourceAccountNumber: process.env.MONNIFY_SOURCE_ACCOUNT, // Your wallet account
+        }),
+      });
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("Transfer Error:", error);
+      res.status(500).json({ error: "Failed to initiate transfer" });
+    }
+  });
+
   // AI Moderation with Gemini
   app.post("/api/moderate", async (req, res) => {
     const { content } = req.body;
