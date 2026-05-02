@@ -1,0 +1,13 @@
+{
+  "name": "SINCODE",
+  "description": "A mobile-first, Nigeria-centric subscription platform for creators to monetize content through subscriptions, PPV, tips, and live streams. Features include instant Naira payouts, advanced privacy tools, and AI-powered moderation.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "AI moderation",
+    "Naira payouts",
+    "Subscription management"
+  ]
+}
