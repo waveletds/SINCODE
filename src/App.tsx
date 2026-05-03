@@ -10,6 +10,7 @@ import {
   Search, 
   PlusSquare, 
   MessageCircle, 
+  MessageSquare,
   User, 
   Bell,
   Settings,
@@ -45,16 +46,13 @@ const Navbar = ({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: 
   const tabs = [
     { id: 'home', icon: Home, label: 'Home' },
     { id: 'discover', icon: Search, label: 'Explore' },
-    { id: 'create', icon: PlusSquare, label: 'Post' },
-    { id: 'messages', icon: MessageCircle, label: 'Chats' },
-    { id: 'profile', icon: UserCircle, label: 'Profile' },
+    { id: 'messages', icon: MessageSquare, label: 'Messages' },
+    { id: 'notifications', icon: Bell, label: 'Alerts' },
+    { id: 'profile', icon: User, label: 'Profile' },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-2 py-3 flex justify-around items-center md:top-0 md:bottom-auto md:flex-col md:w-24 md:h-full md:border-r md:border-slate-100">
-      <div className="hidden md:flex mb-12 items-center justify-center">
-        <Heart size={32} className="text-blue-500 fill-blue-500" />
-      </div>
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 flex justify-around items-center h-16 md:hidden">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -63,11 +61,11 @@ const Navbar = ({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: 
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              "flex flex-col items-center gap-1.5 transition-all duration-300",
-              isActive ? "text-blue-500 scale-110" : "text-slate-400 hover:text-slate-600"
+              "flex-1 flex flex-col items-center justify-center gap-1 transition-all",
+              isActive ? "text-blue-500 scale-105" : "text-slate-400"
             )}
           >
-            <Icon size={26} strokeWidth={isActive ? 2.5 : 2} />
+            <Icon size={24} strokeWidth={isActive ? 2.5 : 1.5} />
           </button>
         );
       })}
@@ -77,31 +75,26 @@ const Navbar = ({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: 
 
 const Header = ({ onOpenMenu, user }: { onOpenMenu: () => void, user: any }) => {
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between">
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-40 bg-white border-b border-slate-50 px-4 py-2 flex items-center justify-between">
+      <div className="flex items-center">
         <button onClick={onOpenMenu} className="relative active:scale-95 transition-transform">
-          <div className="w-10 h-10 rounded-full border border-slate-200 p-0.5">
-            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Tunde'}`} className="w-full h-full rounded-full bg-slate-100" alt="User" />
+          <div className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center bg-slate-50 overflow-hidden">
+            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'sinner'}`} className="w-full h-full" alt="User" />
+            <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
           </div>
-          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
         </button>
       </div>
       
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
-         <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center">
-            <Heart size={24} className="text-blue-500 fill-blue-500" strokeWidth={1.5} />
-         </div>
+      <div className="absolute left-1/2 -translate-x-1/2">
+         <Heart size={26} className="text-blue-500 fill-blue-500" strokeWidth={1} />
       </div>
 
-      <div className="flex items-center gap-2">
-        <button className="text-slate-400 p-1.5 hover:bg-slate-50 rounded-xl transition-colors">
-          <MessageCircle size={22} />
+      <div className="flex items-center gap-1.5">
+        <button className="text-slate-400 p-2 hover:bg-slate-50 rounded-full transition-colors">
+          <HelpCircle size={22} strokeWidth={1.5} />
         </button>
-        <button className="text-slate-400 p-1.5 hover:bg-slate-50 rounded-xl transition-colors">
-          <HelpCircle size={22} />
-        </button>
-        <div className="bg-slate-50 border border-slate-100 py-1.5 px-3 rounded-lg flex items-center gap-2 ml-1">
-           <span className="text-xs font-bold text-slate-700">$0</span>
+        <div className="bg-slate-50 border border-slate-100 py-1 px-3 rounded-lg flex items-center gap-2">
+           <span className="text-[13px] font-bold text-slate-700 tracking-tight">$0</span>
         </div>
       </div>
     </header>
@@ -142,10 +135,10 @@ const FeedPage = () => {
               <button 
                 key={tab} 
                 className={cn(
-                  "px-5 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all border",
+                  "px-6 py-2.5 rounded-full whitespace-nowrap text-[13px] font-bold transition-all border",
                   i === 0 
-                    ? "bg-blue-50 text-blue-600 border-blue-100" 
-                    : "bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100"
+                    ? "bg-slate-900 border-slate-900 text-white shadow-sm" 
+                    : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50"
                 )}
               >
                 {tab}
@@ -374,7 +367,9 @@ const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
       });
 
       if (signInError) {
-        setError('Invalid credentials or non-registered user');
+        setError(signInError.message || 'Invalid credentials or non-registered user');
+      } else if (data.user) {
+        setSuccess('Identity verified! Accessing SINCODE...');
       }
     } catch (err: any) {
       console.error("Login attempt failed:", err);
@@ -605,9 +600,17 @@ const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
 
                    <button 
                       onClick={handleLogin}
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-2xl shadow-2xl shadow-blue-600/20 active:scale-95 transition-all text-sm uppercase tracking-widest"
+                      disabled={isLoading}
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-2xl shadow-2xl shadow-blue-600/20 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3 disabled:opacity-70 disabled:active:scale-100"
                    >
-                      Sign In
+                      {isLoading ? (
+                         <>
+                           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                           <span>Signing In...</span>
+                         </>
+                      ) : (
+                         "Sign In"
+                      )}
                    </button>
                    <button 
                       onClick={() => setIsSigningUp(true)}
@@ -796,15 +799,36 @@ export default function App() {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log("Auth event:", _event, !!session);
       if (session) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        if (profile) {
-          setCurrentUser(profile);
-          setIsLoggedIn(true);
+        setIsLoggedIn(true); // Set logged in immediately once session is detected
+        
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile) {
+            setCurrentUser(profile);
+          } else {
+            // Fallback for user without a profile in the DB yet
+            setCurrentUser({
+              id: session.user.id,
+              name: session.user.user_metadata?.name || 'New User',
+              username: session.user.user_metadata?.username || '@user',
+              email: session.user.email
+            });
+          }
+        } catch (err) {
+          console.error("Profile sync error:", err);
+          // Still logged in, just using fallback data
+          setCurrentUser({
+            id: session.user.id,
+            name: 'User',
+            email: session.user.email
+          });
         }
       } else {
         setCurrentUser(null);
@@ -989,56 +1013,61 @@ export default function App() {
               {/* Profile Header Block */}
               <div className="relative">
                 {/* Cover Photo */}
-                <div className="h-48 w-full bg-linear-to-b from-slate-50 to-slate-200 overflow-hidden">
-                  {/* Potentially an image if user uploaded one */}
+                <div className="h-44 w-full bg-slate-50 border-b border-slate-100 overflow-hidden relative">
+                   {/* Light gradient or subtle pattern like the image */}
+                   <div className="absolute inset-0 bg-linear-to-b from-white to-slate-100 opacity-50"></div>
                 </div>
 
                 {/* Profile Info Overlay */}
-                <div className="px-4 -mt-16 flex flex-col relative z-10">
+                <div className="px-4 -mt-14 flex flex-col relative z-20">
                   <div className="flex items-end justify-between">
                     <div className="relative">
-                      <div className="w-28 h-28 rounded-full border-4 border-white bg-slate-100 overflow-hidden">
+                      <div className="w-24 h-24 rounded-full border-4 border-white bg-slate-200 overflow-hidden shadow-sm">
                         <img 
                           src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.name || "sinner"}`} 
-                          className="w-full h-full object-cover p-1 bg-slate-200" 
+                          className="w-full h-full object-cover" 
                           alt="Avatar" 
                         />
                       </div>
-                      <div className="absolute bottom-2 right-2 w-5 h-5 bg-green-500 border-4 border-white rounded-full"></div>
+                      <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-[3px] border-white rounded-full"></div>
                     </div>
                     
                     <div className="flex gap-2 mb-2">
-                       <button className="px-6 py-2 bg-slate-100 font-bold text-sm rounded-full border border-slate-200 text-slate-800">
+                       <button className="px-5 py-1.5 bg-slate-50 font-bold text-[13px] rounded-full border border-slate-200 text-slate-800 shadow-xs hover:bg-slate-100 transition-colors">
                           Profile
                        </button>
-                       <button className="p-2 bg-slate-100 rounded-full border border-slate-200 text-slate-800">
+                       <button className="p-1.5 bg-slate-50 rounded-full border border-slate-200 text-slate-800 hover:bg-slate-100 transition-colors">
                           <MoreHorizontal size={20} />
                        </button>
                     </div>
                   </div>
 
                   <div className="mt-4">
-                    <h2 className="text-xl font-bold text-slate-900">{currentUser?.name || "sinner25"}</h2>
-                    <p className="text-slate-500 text-sm font-medium">{currentUser?.username || "@sinner25"}</p>
-                    <p className="text-slate-400 text-[11px] mt-1">Last seen 2 minutes ago</p>
+                    <h2 className="text-xl font-bold text-slate-900 leading-tight">{currentUser?.name || "sinner25"}</h2>
+                    <p className="text-slate-400 text-sm font-medium mt-0.5">{currentUser?.username || "@sinner25"}</p>
+                    <p className="text-slate-400 text-[11px] mt-1.5 ml-0.5 flex items-center gap-1.5">
+                       Last seen 2 minutes ago
+                    </p>
                   </div>
 
                   {/* Stats */}
-                  <div className="flex gap-4 mt-4">
-                    <div className="flex items-center gap-1.5">
-                       <Heart size={16} className="text-slate-400 fill-slate-400" />
-                       <span className="text-sm font-bold text-slate-900">0</span>
+                  <div className="flex gap-5 mt-5 pl-1">
+                    <div className="flex items-center gap-2">
+                       <Heart size={16} className="text-red-500 fill-red-500" strokeWidth={0} />
+                       <span className="text-sm font-bold text-slate-900 tracking-tight">0</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                       <Users size={16} className="text-slate-400" />
-                       <span className="text-sm font-bold text-slate-900">0</span>
+                    <div className="flex items-center gap-2">
+                       <Users size={16} className="text-blue-500" />
+                       <span className="text-sm font-bold text-slate-900 tracking-tight">0</span>
                     </div>
                   </div>
 
                   {/* Bio */}
-                  <p className="text-slate-600 text-sm mt-4 leading-normal">
-                    {currentUser?.bio || "Hey, I am using SINCODE."}
-                  </p>
+                  <div className="mt-5 px-1">
+                    <p className="text-slate-700 text-[13px] leading-relaxed font-medium">
+                      {currentUser?.bio || "Hey, I am using SINCODE."}
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -1117,14 +1146,20 @@ export default function App() {
             </motion.div>
           )}
 
-          {/* Fallback for other tabs */}
+          {/* Placeholder for tabs without content yet */}
           {['discover', 'messages'].includes(activeTab) && (
-            <div className="h-[70vh] flex flex-col items-center justify-center p-8 text-center">
-               <div className="w-24 h-24 glass rounded-[2rem] flex items-center justify-center mb-8 text-emerald-500 shadow-2xl animate-pulse">
-                  <TrendingUp size={48} />
+            <div className="h-[75vh] flex flex-col items-center justify-center p-8 text-center bg-white">
+               <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center mb-6 text-blue-400">
+                  {activeTab === 'discover' ? <Search size={32} /> : <MessageSquare size={32} />}
                </div>
-               <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-2">Syncing Hub...</h3>
-               <p className="text-slate-500 max-w-[15rem] mx-auto text-xs font-bold uppercase tracking-widest leading-relaxed">We're finalizing the {activeTab.toUpperCase()} infrastructure for the next wave of Nigerian talent.</p>
+               <h3 className="text-lg font-bold text-slate-800 mb-1">
+                 {activeTab === 'discover' ? 'Explore Content' : 'Your Messages'}
+               </h3>
+               <p className="text-slate-400 text-xs max-w-[180px] leading-relaxed font-medium">
+                 {activeTab === 'discover' 
+                   ? 'Searching for the most engaging Nigerian creators...' 
+                   : 'Connect directly with fans and creators through SINCODE.'}
+               </p>
             </div>
           )}
         </AnimatePresence>
