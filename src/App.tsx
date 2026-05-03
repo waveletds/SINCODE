@@ -804,6 +804,10 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
     const [fundingAmount, setFundingAmount] = useState('');
 
     const generateDAN = async () => {
+        if (!user || !user.id) {
+            alert("Connection error: Please try logging out and back in.");
+            return;
+        }
         setIsGenerating(true);
         try {
             const response = await fetch("/api/monnify/reserved-accounts", {
@@ -811,9 +815,9 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     accountReference: `DAN-${user.id}-${Date.now()}`,
-                    accountName: `SINCODE / ${user.name.toUpperCase()}`,
-                    customerEmail: user.email || `${user.username}@sincode.ng`,
-                    customerName: user.name
+                    accountName: `SINCODE / ${(user.name || user.username || 'USER').toUpperCase()}`,
+                    customerEmail: user.email || `${user.username || user.id}@sincode.ng`,
+                    customerName: user.name || user.username || 'User'
                 })
             });
 
