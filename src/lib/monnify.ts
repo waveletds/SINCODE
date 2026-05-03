@@ -45,28 +45,39 @@ export const initializePayment = async ({
 
   try {
     const sdk = await loadSDK();
-    if (!sdk) throw new Error("SDK loaded but not initialized");
+    if (!sdk || !window.MonnifySDK) {
+      throw new Error("Monnify SDK failed to initialize on window object");
+    }
+
+    const apiKey = import.meta.env.VITE_MONNIFY_API_KEY || "MK_TEST_SDK";
+    const contractCode = import.meta.env.VITE_MONNIFY_CONTRACT_CODE || "1234567890";
+
+    console.log("Initializing Monnify with:", { 
+      apiKey: apiKey.substring(0, 8) + "...", 
+      contractCode,
+      customerEmail 
+    });
 
     window.MonnifySDK.initialize({
-    amount,
-    currencyCode: "NGN",
-    customerName,
-    customerEmail,
-    paymentReference,
-    paymentDescription,
-    apiKey: import.meta.env.VITE_MONNIFY_API_KEY || "MK_TEST_SDK",
-    contractCode: import.meta.env.VITE_MONNIFY_CONTRACT_CODE || "1234567890",
-    onComplete: (response: any) => {
-      console.log("Payment Complete", response);
-      onComplete(response);
-    },
-    onClose: (data: any) => {
-      console.log("Payment Closed", data);
-      onClose(data);
-    }
-  });
+      amount,
+      currencyCode: "NGN",
+      customerName,
+      customerEmail,
+      paymentReference,
+      paymentDescription,
+      apiKey,
+      contractCode,
+      onComplete: (response: any) => {
+        console.log("Monnify: Payment Complete", response);
+        onComplete(response);
+      },
+      onClose: (data: any) => {
+        console.log("Monnify: Payment Closed", data);
+        onClose(data);
+      }
+    });
   } catch (error) {
-    console.error("Monnify Error:", error);
-    // Prefer showing a UI message instead of alert
+    console.error("Monnify Initialization Error:", error);
+    throw error; // Re-throw to be caught by the caller
   }
 };

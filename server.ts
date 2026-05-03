@@ -85,8 +85,13 @@ async function startServer() {
 
         res.json(response.data);
       } catch (error: any) {
-        console.error("Monnify Init Error:", error.response?.data || error.message);
-        res.status(500).json({ error: error.message || "Failed to initialize payment" });
+        const errorData = error.response?.data;
+        console.error("Monnify Init Error:", JSON.stringify(errorData || error.message, null, 2));
+        res.status(error.response?.status || 500).json({ 
+          requestSuccessful: false,
+          responseMessage: errorData?.responseMessage || errorData?.message || error.message || "Failed to initialize payment",
+          error: errorData || error.message
+        });
       }
     });
 
@@ -110,8 +115,13 @@ async function startServer() {
 
         res.json(response.data);
       } catch (error: any) {
-        console.error("Monnify Banks Error:", error.response?.data || error.message);
-        res.status(500).json({ error: "Failed to fetch banks" });
+        const errorData = error.response?.data;
+        console.error("Monnify Banks Error:", JSON.stringify(errorData || error.message, null, 2));
+        res.status(error.response?.status || 500).json({ 
+          requestSuccessful: false,
+          responseMessage: errorData?.responseMessage || errorData?.message || error.message || "Failed to fetch banks",
+          error: errorData || error.message
+        });
       }
     });
 
@@ -133,8 +143,13 @@ async function startServer() {
 
         res.json(response.data);
       } catch (error: any) {
-        console.error("Monnify Validate Error:", error.response?.data || error.message);
-        res.status(500).json({ error: "Failed to validate account" });
+        const errorData = error.response?.data;
+        console.error("Monnify Validate Error:", JSON.stringify(errorData || error.message, null, 2));
+        res.status(error.response?.status || 500).json({ 
+          requestSuccessful: false,
+          responseMessage: errorData?.responseMessage || errorData?.message || error.message || "Failed to validate account",
+          error: errorData || error.message
+        });
       }
     });
 
@@ -162,8 +177,13 @@ async function startServer() {
 
         res.json(response.data);
       } catch (error: any) {
-        console.error("Monnify Transfer Error:", error.response?.data || error.message);
-        res.status(500).json({ error: "Failed to initiate transfer" });
+        const errorData = error.response?.data;
+        console.error("Monnify Transfer Error:", JSON.stringify(errorData || error.message, null, 2));
+        res.status(error.response?.status || 500).json({ 
+          requestSuccessful: false,
+          responseMessage: errorData?.responseMessage || errorData?.message || error.message || "Failed to initiate transfer",
+          error: errorData || error.message
+        });
       }
     });
 
