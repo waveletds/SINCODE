@@ -823,7 +823,7 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
 
             const data = await response.json();
             
-            if (data.requestSuccessful) {
+            if (data.requestSuccessful && data.responseBody && data.responseBody.accounts && data.responseBody.accounts.length > 0) {
                 // Monnify returns accounts in responseBody.accounts
                 const account = data.responseBody.accounts[0];
                 const newAccount = {
@@ -832,10 +832,21 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                     bankName: account.bankName,
                     reference: data.responseBody.accountReference
                 };
+                
+                // Persist to Supabase
+                try {
+                    await supabase
+                        .from('profiles')
+                        .update({ monnify_account: newAccount })
+                        .eq('id', user.id);
+                } catch (dbErr) {
+                    console.error("DB Update Error (monnify_account):", dbErr);
+                }
+
                 onUpdate({ ...user, monnify_account: newAccount });
                 alert("Virtual account generated successfully!");
             } else {
-                const errorMsg = data.responseMessage || "Failed to generate account";
+                const errorMsg = data.responseMessage || data.responseBody?.responseMessage || "Failed to generate account (No account data returned)";
                 console.error("DAN Generation Error:", data);
                 alert(`Error: ${errorMsg}`);
             }
@@ -909,21 +920,31 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">Manage your sin-credits</p>
             </header>
 
-            <div className="bg-navy-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
-                <div className="relative z-10 space-y-1">
-                    <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest opacity-80">Available Balance</p>
-                    <h3 className="text-5xl font-display font-black tracking-tighter">{formatNaira(user?.balance || 0)}</h3>
+            <div className="bg-navy-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl group transition-all duration-500 hover:shadow-yellow-500/10">
+                <div className="absolute -top-10 -right-10 w-48 h-48 bg-yellow-500/20 blur-[80px] rounded-full group-hover:bg-yellow-500/30 transition-all duration-700"></div>
+                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-blue-500/10 blur-[60px] rounded-full"></div>
+                
+                <div className="relative z-10 space-y-2">
+                    <div className="flex items-center gap-2">
+                        <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest opacity-80">Available Balance</p>
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
+                    </div>
+                    <div className="relative inline-block">
+                        <h3 className="text-5xl font-display font-black tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                            {formatNaira(user?.balance || 0)}
+                        </h3>
+                        <div className="absolute -inset-1 bg-yellow-500/5 blur-xl group-hover:bg-yellow-500/10 transition-all duration-700 -z-10 rounded-full"></div>
+                    </div>
                 </div>
                 
-                <div className="mt-10 pt-10 border-t border-white/5 flex gap-4">
-                    <div className="flex-1">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Account Holder</p>
-                        <p className="text-xs font-bold uppercase tracking-tight">{user?.name}</p>
+                <div className="mt-12 pt-10 border-t border-white/5 flex items-end justify-between">
+                    <div>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Account Holder</p>
+                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-200">{user?.name || user?.username}</p>
                     </div>
-                    <div className="text-right">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Network</p>
-                        <p className="text-xs font-bold uppercase tracking-tight">Mainnet</p>
+                    <div className="bg-white/5 backdrop-blur-md px-4 py-2 rounded-xl border border-white/5">
+                        <p className="text-[9px] font-black text-yellow-500 uppercase tracking-widest leading-none">Status</p>
+                        <p className="text-[10px] font-bold uppercase tracking-tight text-white mt-1">Tier 2 Active</p>
                     </div>
                 </div>
             </div>
@@ -933,15 +954,15 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                 <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] pl-1">Dedicated Account</h4>
                 {user?.monnify_account ? (
                     <div className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm space-y-4">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between font-mono">
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bank Name</span>
                             <span className="text-xs font-bold text-slate-900">{user.monnify_account.bankName}</span>
                         </div>
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between font-mono">
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Account Number</span>
                             <span className="text-lg font-black text-navy-800 tracking-tighter">{user.monnify_account.accountNumber}</span>
                         </div>
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between font-mono">
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Account Name</span>
                             <span className="text-[11px] font-bold text-slate-900">{user.monnify_account.accountName}</span>
                         </div>
@@ -950,10 +971,12 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                         </div>
                     </div>
                 ) : (
-                    <div className="bg-slate-50 border border-slate-100 border-dashed rounded-[2rem] p-10 flex flex-col items-center text-center space-y-6">
-                        <Monitor size={32} className="text-slate-300" />
+                    <div className="bg-slate-50 border border-slate-100 border-dashed rounded-[2.5rem] p-10 flex flex-col items-center text-center space-y-6">
+                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-slate-300 shadow-sm border border-slate-50">
+                            <Monitor size={32} />
+                        </div>
                         <div className="space-y-2">
-                            <h5 className="text-sm font-bold text-slate-900">Virtual Account Number</h5>
+                            <h5 className="text-sm font-bold text-slate-900 tracking-tight uppercase italic">Virtual Account Number</h5>
                             <p className="text-[10px] text-slate-400 font-medium leading-relaxed max-w-[200px]">Generate a dedicated NGN account to fund your profile with bank transfers.</p>
                         </div>
                         <button 
@@ -963,35 +986,41 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                         >
                             {isGenerating ? (
                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            ) : "Generate Monnify DAN"}
+                            ) : "Generate Virtual Account"}
                         </button>
                     </div>
                 )}
             </section>
 
-            {/* Funding Input */}
-            <section className="space-y-4">
-                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] pl-1">Quick Top-up</h4>
-                <div className="flex gap-3">
+            {/* Quick Top-up Section */}
+            <section className="space-y-6">
+                <div className="flex items-center justify-between px-1">
+                    <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em]">Quick Top-up</h4>
+                    <button 
+                        onClick={handleDemoFund}
+                        className="text-[9px] font-black text-blue-500 uppercase tracking-widest hover:text-blue-400 transition-colors flex items-center gap-1.5"
+                    >
+                        <RotateCcw size={10} />
+                        Demo +100k
+                    </button>
+                </div>
+                
+                <div className="bg-slate-50 border border-slate-100 rounded-[2.2rem] p-4 flex items-center gap-3 shadow-sm focus-within:border-blue-200 focus-within:bg-white transition-all">
+                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-50">
+                        <span className="font-black text-lg text-navy-800 italic">₦</span>
+                    </div>
                     <input 
                         type="number" 
                         value={fundingAmount}
                         onChange={e => setFundingAmount(e.target.value)}
-                        placeholder="Amount (₦)" 
-                        className="flex-1 bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:outline-hidden focus:border-blue-500" 
+                        placeholder="Enter amount to fund" 
+                        className="flex-1 bg-transparent border-none text-sm font-black text-slate-900 placeholder:text-slate-300 focus:outline-hidden focus:ring-0" 
                     />
                     <button 
                         onClick={handleFundWallet}
-                        className="bg-navy-900 text-yellow-500 font-black px-8 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all"
+                        className="bg-navy-900 text-yellow-500 font-black px-8 py-3.5 rounded-2xl text-[10px] uppercase tracking-widest shadow-xl shadow-navy-900/10 active:scale-95 transition-all hover:bg-navy-800"
                     >
-                        Fund
-                    </button>
-                    <button 
-                        onClick={handleDemoFund}
-                        className="bg-yellow-500 text-navy-950 font-black px-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all border border-yellow-600"
-                        title="Add ₦100,000 for Testing"
-                    >
-                        Demo +100k
+                        Fund Wallet
                     </button>
                 </div>
             </section>
