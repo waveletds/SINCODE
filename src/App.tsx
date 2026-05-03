@@ -58,6 +58,7 @@ import {
   ArrowLeft,
   ArrowRight,
   RotateCcw,
+  ShieldAlert,
   ListFilter,
   Download
 } from 'lucide-react';
@@ -91,7 +92,7 @@ const Navbar = ({ activeTab, setActiveTab, setIsUploading }: { activeTab: string
             }}
             className={cn(
               "flex-1 flex flex-col items-center justify-center gap-1 transition-all",
-              isActive ? "text-blue-500 scale-105" : "text-slate-400"
+              isActive ? "text-yellow-500 scale-105" : "text-slate-400"
             )}
           >
             <Icon size={24} strokeWidth={isActive ? 2.5 : 1.5} />
@@ -115,7 +116,7 @@ const Header = ({ onOpenMenu, user, onWalletClick }: { onOpenMenu: () => void, u
       </div>
       
       <div className="absolute left-1/2 -translate-x-1/2">
-         <Heart size={26} className="text-blue-500 fill-blue-500" strokeWidth={1} />
+         <Heart size={26} className="text-yellow-500 fill-yellow-500" strokeWidth={1} />
       </div>
 
       <div className="flex items-center gap-1.5">
@@ -244,12 +245,12 @@ const FeedPage = ({ onPostClick, user, onUpdate }: { onPostClick: () => void, us
                 {tab}
               </button>
            ))}
-           <button className="p-2 aspect-square rounded-full bg-slate-50 border border-slate-100 text-blue-500">
+           <button className="p-2 aspect-square rounded-full bg-slate-50 border border-slate-100 text-yellow-500">
               <TrendingUp size={18} />
            </button>
            <button 
             onClick={onPostClick}
-            className="p-2 aspect-square rounded-full bg-slate-50 border border-slate-100 text-blue-500 active:scale-95 transition-transform"
+            className="p-2 aspect-square rounded-full bg-slate-50 border border-slate-100 text-yellow-500 active:scale-95 transition-transform"
            >
               <PlusSquare size={18} />
            </button>
@@ -290,19 +291,19 @@ const FeedPage = ({ onPostClick, user, onUpdate }: { onPostClick: () => void, us
                       <img src={creator.avatar} className="w-full h-full object-cover" alt={creator.name} />
                     </div>
                     {/* Tiny Status Indicator found in screenshot */}
-                    <div className="absolute bottom-1 right-1 w-3 h-3 bg-blue-500 border-2 border-white rounded-full"></div>
+                    <div className="absolute bottom-1 right-1 w-3 h-3 bg-yellow-500 border-2 border-white rounded-full"></div>
                   </div>
 
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1">
                       <h4 className="text-sm font-bold text-slate-900 tracking-tight">{creator.name}</h4>
-                      <BadgeCheck size={16} className="text-blue-500 fill-blue-500 bg-white rounded-full" />
+                      <BadgeCheck size={16} className="text-yellow-500 fill-yellow-500 bg-white rounded-full" />
                     </div>
                     <p className="text-[11px] text-slate-500 font-medium">{creator.username}</p>
                   </div>
                </div>
 
-               <button className="bg-blue-500 hover:bg-blue-600 text-white text-[11px] font-bold px-6 py-2 rounded-full shadow-sm transition-all active:scale-95 leading-none">
+               <button className="bg-navy-800 hover:bg-navy-950 text-yellow-500 text-[11px] font-bold px-6 py-2 rounded-full shadow-sm transition-all active:scale-95 leading-none">
                   Follow
                </button>
             </div>
@@ -311,7 +312,7 @@ const FeedPage = ({ onPostClick, user, onUpdate }: { onPostClick: () => void, us
         
         {/* Indicators */}
         <div className="flex justify-center items-center gap-2 pt-2">
-           <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+           <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
            <div className="w-1.5 h-1.5 bg-slate-200 rounded-full"></div>
            <button className="text-slate-400 pl-1"><ChevronRight size={14} /></button>
         </div>
@@ -369,8 +370,8 @@ const FeedPage = ({ onPostClick, user, onUpdate }: { onPostClick: () => void, us
                 <div>
                   <div className="flex items-center gap-1.5">
                     <h3 className="text-sm font-bold text-slate-900">{post === 1 ? 'TheLittleJui...' : post === 2 ? 'Tems Angel' : 'Lagos Model'}</h3>
-                    <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                       <ShieldCheck size={10} className="text-white" strokeWidth={3} />
+                    <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
+                       <ShieldCheck size={10} className="text-navy-950" strokeWidth={3} />
                     </div>
                   </div>
                   <p className="text-xs text-slate-500">@{post === 1 ? 'thelittlejui...' : post === 2 ? 'tems_vibes' : 'ekofinesse'} • {post * 2}h</p>
@@ -399,7 +400,7 @@ const FeedPage = ({ onPostClick, user, onUpdate }: { onPostClick: () => void, us
                     </div>
                     <button 
                       onClick={() => handlePayment(2500, "Unlock Content")}
-                      className="bg-blue-600 text-white font-bold py-2.5 px-6 rounded-full text-xs uppercase tracking-widest shadow-lg shadow-blue-600/20 active:scale-95 transition-all"
+                      className="bg-navy-800 text-yellow-500 font-bold py-2.5 px-6 rounded-full text-xs uppercase tracking-widest shadow-lg shadow-navy-800/20 active:scale-95 transition-all"
                     >
                       Unlock for $5
                     </button>
@@ -410,15 +411,15 @@ const FeedPage = ({ onPostClick, user, onUpdate }: { onPostClick: () => void, us
             {/* Post Bottom Bar */}
             <div className="px-4 pt-2 flex items-center justify-between">
                <div className="flex items-center gap-6 text-slate-400">
-                  <div className="flex items-center gap-1.5 p-1 hover:text-blue-500 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-1.5 p-1 hover:text-yellow-500 transition-colors cursor-pointer">
                      <Heart size={22} />
                      <span className="text-xs font-bold">{post * 42}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 p-1 hover:text-blue-500 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-1.5 p-1 hover:text-yellow-500 transition-colors cursor-pointer">
                      <MessageCircle size={22} />
                      <span className="text-xs font-bold">{post * 12}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 p-1 hover:text-blue-500 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-1.5 p-1 hover:text-yellow-500 transition-colors cursor-pointer">
                      <Bookmark size={22} />
                   </div>
                </div>
@@ -580,19 +581,19 @@ const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
          "bg-navy-900 px-8 relative overflow-hidden flex flex-col items-center transition-all duration-500",
          isSigningUp || isForgotPass ? "pt-6 pb-6" : "pt-12 pb-16"
        )}>
-          <div className="absolute top-0 inset-x-0 h-full bg-linear-to-b from-blue-600/5 to-transparent"></div>
+          <div className="absolute top-0 inset-x-0 h-full bg-linear-to-b from-yellow-500/5 to-transparent"></div>
           
           <div className="relative z-10 flex flex-col items-center">
              <div className="relative mb-6">
                 <Heart size={isSigningUp || isForgotPass ? 40 : 80} className="text-white fill-white transition-all" strokeWidth={1} />
                 <div className="absolute inset-0 flex items-center justify-center">
                    <div className="w-8 h-8 rounded-full bg-navy-900 flex items-center justify-center">
-                      <Eye size={18} className="text-blue-400" strokeWidth={3} />
+                      <Eye size={18} className="text-yellow-500" strokeWidth={3} />
                    </div>
                 </div>
              </div>
              <h1 className="text-5xl font-display font-black text-white tracking-tight uppercase italic mb-2">SINCODE</h1>
-             <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.4em]">Elite Nigerian Creator Hub</p>
+             <p className="text-yellow-500 text-[10px] font-black uppercase tracking-[0.4em]">Elite Nigerian Creator Hub</p>
           </div>
 
           {/* Featured Teasers Grid - Hide or shrink when signing up or forgot password */}
@@ -617,7 +618,7 @@ const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
                      </div>
                      {t.active && (
                         <div className="absolute top-2 left-2 flex items-center gap-1.5 glass px-2 py-0.5 rounded-full scale-75 origin-top-left">
-                           <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                           <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></div>
                            <span className="text-[9px] font-black uppercase text-white">Live</span>
                         </div>
                      )}
@@ -649,7 +650,7 @@ const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
                    
                    <button 
                       onClick={handleRecovery}
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-2xl shadow-2xl shadow-blue-600/20 active:scale-95 transition-all text-sm uppercase tracking-widest mt-4"
+                      className="w-full bg-navy-800 hover:bg-navy-950 text-yellow-500 font-black py-5 rounded-2xl shadow-2xl shadow-navy-800/20 active:scale-95 transition-all text-sm uppercase tracking-widest mt-4"
                    >
                       Recover Password
                    </button>
@@ -728,7 +729,7 @@ const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
                    
                    <button 
                       onClick={handleSignUp}
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-2xl shadow-2xl shadow-blue-600/20 active:scale-95 transition-all text-sm uppercase tracking-widest mt-4"
+                      className="w-full bg-navy-800 hover:bg-navy-950 text-yellow-500 font-black py-5 rounded-2xl shadow-2xl shadow-navy-800/20 active:scale-95 transition-all text-sm uppercase tracking-widest mt-4"
                    >
                       Create Elite Account
                    </button>
@@ -804,17 +805,42 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
 
     const generateDAN = async () => {
         setIsGenerating(true);
-        // Simulate Monnify API call
-        setTimeout(() => {
-            const newAccount = {
-                accountName: `SINCODE / ${user?.name?.toUpperCase()}`,
-                accountNumber: Math.floor(Math.random() * 10000000000).toString().padStart(10, '0'),
-                bankName: 'WEMA BANK (MONNIFY)',
-                reference: `DAN-${user?.id}-${Date.now()}`
-            };
-            onUpdate({ ...user, monnify_account: newAccount });
+        try {
+            const response = await fetch("/api/monnify/reserved-accounts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    accountReference: `DAN-${user.id}-${Date.now()}`,
+                    accountName: `SINCODE / ${user.name.toUpperCase()}`,
+                    customerEmail: user.email || `${user.username}@sincode.ng`,
+                    customerName: user.name
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.requestSuccessful) {
+                // Monnify returns accounts in responseBody.accounts
+                const account = data.responseBody.accounts[0];
+                const newAccount = {
+                    accountName: account.accountName,
+                    accountNumber: account.accountNumber,
+                    bankName: account.bankName,
+                    reference: data.responseBody.accountReference
+                };
+                onUpdate({ ...user, monnify_account: newAccount });
+                alert("Virtual account generated successfully!");
+            } else {
+                const errorMsg = data.responseMessage || "Failed to generate account";
+                console.error("DAN Generation Error:", data);
+                alert(`Error: ${errorMsg}`);
+            }
+        } catch (error) {
+            console.error("Network error during DAN generation:", error);
+            alert("Network error: Could not generate virtual account. Please check your connection.");
+        } finally {
             setIsGenerating(false);
-        }, 1500);
+        }
     };
 
     const handleFundWallet = () => {
@@ -872,17 +898,17 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
     return (
         <div className="bg-white min-h-screen pb-20 p-6 space-y-8">
             <header className="flex flex-col items-center text-center space-y-2">
-                <div className="w-16 h-16 bg-blue-600 rounded-[1.5rem] flex items-center justify-center shadow-lg shadow-blue-600/20 mb-2">
-                    <DollarSign size={32} className="text-white" />
+                <div className="w-16 h-16 bg-navy-800 rounded-[1.5rem] flex items-center justify-center shadow-lg shadow-navy-800/20 mb-2">
+                    <DollarSign size={32} className="text-yellow-500" />
                 </div>
-                <h2 className="text-3xl font-display font-black text-slate-900 tracking-tighter uppercase italic leading-none">Wallet & Credits</h2>
+                <h2 className="text-3xl font-display font-black text-navy-900 tracking-tighter uppercase italic leading-none">Wallet & Credits</h2>
                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">Manage your sin-credits</p>
             </header>
 
-            <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
+            <div className="bg-navy-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
                 <div className="relative z-10 space-y-1">
-                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest opacity-80">Available Balance</p>
+                    <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest opacity-80">Available Balance</p>
                     <h3 className="text-5xl font-display font-black tracking-tighter">{formatNaira(user?.balance || 0)}</h3>
                 </div>
                 
@@ -909,7 +935,7 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Account Number</span>
-                            <span className="text-lg font-black text-blue-600 tracking-tighter">{user.monnify_account.accountNumber}</span>
+                            <span className="text-lg font-black text-navy-800 tracking-tighter">{user.monnify_account.accountNumber}</span>
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Account Name</span>
@@ -929,7 +955,7 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                         <button 
                             onClick={generateDAN}
                             disabled={isGenerating}
-                            className="bg-blue-600 text-white font-black py-4 px-8 rounded-2xl text-[10px] uppercase tracking-widest shadow-lg shadow-blue-600/10 active:scale-95 transition-all flex items-center justify-center gap-2"
+                            className="bg-navy-800 text-yellow-500 font-black py-4 px-8 rounded-2xl text-[10px] uppercase tracking-widest shadow-lg shadow-navy-800/10 active:scale-95 transition-all flex items-center justify-center gap-2"
                         >
                             {isGenerating ? (
                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -952,13 +978,13 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                     />
                     <button 
                         onClick={handleFundWallet}
-                        className="bg-slate-900 text-white font-black px-8 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all"
+                        className="bg-navy-900 text-yellow-500 font-black px-8 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all"
                     >
                         Fund
                     </button>
                     <button 
                         onClick={handleDemoFund}
-                        className="bg-blue-600 text-white font-black px-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all"
+                        className="bg-yellow-500 text-navy-950 font-black px-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all border border-yellow-600"
                         title="Add ₦100,000 for Testing"
                     >
                         Demo +100k
@@ -980,7 +1006,7 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                                 <div className="flex items-center gap-4">
                                     <div className={cn(
                                         "w-12 h-12 rounded-xl flex items-center justify-center border",
-                                        tx.type === 'funding' ? "bg-emerald-50 text-emerald-500 border-emerald-100" : "bg-blue-50 text-blue-500 border-blue-100"
+                                        tx.type === 'funding' ? "bg-emerald-50 text-emerald-500 border-emerald-100" : "bg-yellow-50 text-yellow-600 border-yellow-100"
                                     )}>
                                         {tx.type === 'funding' ? <Plus size={20} /> : <ShoppingBag size={20} />}
                                     </div>
@@ -991,7 +1017,7 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                                 </div>
                                 <p className={cn(
                                     "text-sm font-black tracking-tighter",
-                                    tx.type === 'funding' ? "text-emerald-500" : "text-blue-600"
+                                    tx.type === 'funding' ? "text-emerald-500" : "text-navy-800"
                                 )}>
                                     {tx.type === 'funding' ? '+' : '-'}{formatNaira(tx.amount)}
                                 </p>
@@ -1090,7 +1116,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                         <div>
                             <p className="text-sm font-bold text-slate-900">{selectedProduct.name}</p>
                             <p className="text-[10px] text-slate-400 font-medium">{selectedProduct.creator}</p>
-                            <p className="text-sm font-black text-blue-500 mt-1">{formatNaira(selectedProduct.price)}</p>
+                            <p className="text-sm font-black text-yellow-600 mt-1">{formatNaira(selectedProduct.price)}</p>
                         </div>
                     </div>
 
@@ -1102,7 +1128,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                                 required
                                 value={deliveryDetails.fullName}
                                 onChange={e => setDeliveryDetails({...deliveryDetails, fullName: e.target.value})}
-                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:outline-hidden focus:border-blue-500" 
+                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:outline-hidden focus:border-yellow-500" 
                                 placeholder="Enter your full name" 
                             />
                         </div>
@@ -1113,7 +1139,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                                 required
                                 value={deliveryDetails.phone}
                                 onChange={e => setDeliveryDetails({...deliveryDetails, phone: e.target.value})}
-                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:outline-hidden focus:border-blue-500" 
+                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:outline-hidden focus:border-yellow-500" 
                                 placeholder="e.g. +234 800 000 0000" 
                             />
                         </div>
@@ -1124,7 +1150,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                                 required
                                 value={deliveryDetails.address}
                                 onChange={e => setDeliveryDetails({...deliveryDetails, address: e.target.value})}
-                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:outline-hidden focus:border-blue-500" 
+                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:outline-hidden focus:border-yellow-500" 
                                 placeholder="Street address" 
                             />
                         </div>
@@ -1152,7 +1178,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                                 />
                             </div>
                         </div>
-                        <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl text-sm uppercase tracking-widest shadow-xl shadow-blue-600/10 active:scale-95 transition-all mt-8">
+                        <button type="submit" className="w-full bg-navy-800 text-yellow-500 font-black py-5 rounded-2xl text-sm uppercase tracking-widest shadow-xl shadow-navy-800/10 active:scale-95 transition-all mt-8">
                             Proceed to Payment
                         </button>
                     </form>
@@ -1173,19 +1199,19 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                     <div className="space-y-4">
                         <button 
                             onClick={handleWalletPayment}
-                            className="w-full bg-blue-600 text-white p-6 rounded-[2rem] text-left shadow-lg shadow-blue-600/10 group relative overflow-hidden active:scale-[0.98] transition-all"
+                            className="w-full bg-navy-800 text-white p-6 rounded-[2rem] text-left shadow-lg shadow-navy-800/10 group relative overflow-hidden active:scale-[0.98] transition-all"
                         >
-                            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 blur-2xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-yellow-500/10 blur-2xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
                             <div className="relative z-10 flex items-center justify-between">
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-100 flex items-center gap-1.5 mb-1">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-yellow-500 flex items-center gap-1.5 mb-1">
                                         <Monitor size={12} />
                                         Pay with Wallet
                                     </p>
                                     <p className="text-lg font-black italic tracking-tighter">SINCODE BALANCE</p>
-                                    <p className="text-xs font-bold mt-2 text-blue-100">Wallet: {formatNaira(user?.balance || 0)}</p>
+                                    <p className="text-xs font-bold mt-2 text-yellow-500">Wallet: {formatNaira(user?.balance || 0)}</p>
                                 </div>
-                                <p className="text-xl font-black">{formatNaira(selectedProduct.price)}</p>
+                                <p className="text-xl font-black text-yellow-500">{formatNaira(selectedProduct.price)}</p>
                             </div>
                         </button>
 
@@ -1208,13 +1234,13 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                             </div>
                         </div>
 
-                        <div className="bg-blue-50 border border-blue-100 rounded-[2rem] p-6">
-                            <p className="text-xs text-blue-700 font-medium italic">Your order will be processed automatically once transfer is detected. Do not close this page.</p>
+                        <div className="bg-yellow-50 border border-yellow-100 rounded-[2rem] p-6">
+                            <p className="text-xs text-navy-800 font-medium italic">Your order will be processed automatically once transfer is detected. Do not close this page.</p>
                         </div>
 
                         <button 
                             onClick={handlePaymentComplete}
-                            className="w-full bg-slate-900 text-white font-black py-5 rounded-2xl text-sm uppercase tracking-widest active:scale-95 transition-all mt-8"
+                            className="w-full bg-navy-950 text-yellow-500 font-black py-5 rounded-2xl text-sm uppercase tracking-widest active:scale-95 transition-all mt-8"
                         >
                             I have Paid
                         </button>
@@ -1251,7 +1277,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                                         <div className="flex-1">
                                             <div className="flex justify-between items-start">
                                                 <h4 className="text-md font-bold text-slate-900 leading-tight">{order.name}</h4>
-                                                <span className="text-[9px] font-black text-blue-500 bg-blue-50 px-2 py-1 rounded-md uppercase tracking-widest">{order.type}</span>
+                                                <span className="text-[9px] font-black text-yellow-600 bg-yellow-50 px-2 py-1 rounded-md uppercase tracking-widest">{order.type}</span>
                                             </div>
                                             <p className="text-[10px] text-slate-400 font-medium mt-1">{order.creator}</p>
                                             <p className="text-xs font-black text-slate-900 mt-2">{formatNaira(order.price)}</p>
@@ -1260,7 +1286,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
 
                                     <div className="mt-6 pt-6 border-t border-slate-50 space-y-4">
                                         {order.type === 'digital' ? (
-                                            <button className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest shadow-lg shadow-blue-600/10 flex items-center justify-center gap-2">
+                                            <button className="w-full bg-navy-800 text-yellow-500 font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest shadow-lg shadow-navy-800/10 flex items-center justify-center gap-2">
                                                 <Download size={16} />
                                                 Download Digital Content
                                             </button>
@@ -1268,7 +1294,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                                             <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
                                                 <div className="flex items-center justify-between">
                                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Delivery Schedule</p>
-                                                    <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest">{order.deliveryDay}, {order.deliveryTime}</p>
+                                                    <p className="text-[9px] font-black text-yellow-600 uppercase tracking-widest">{order.deliveryDay}, {order.deliveryTime}</p>
                                                 </div>
                                                 <div className="flex items-center justify-between pt-2 border-t border-slate-200/50">
                                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Order PIN / ID</p>
@@ -1298,7 +1324,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                     >
                         <ShoppingBag size={24} className="text-slate-400" />
                         {orders.length > 0 && (
-                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold animate-pulse">{orders.length}</div>
+                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center text-[10px] text-navy-950 font-bold animate-pulse">{orders.length}</div>
                         )}
                     </button>
                 </div>
@@ -1337,7 +1363,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                                     <span className="text-[14px] font-black text-slate-900">{formatNaira(p.price)}</span>
                                     <button 
                                         onClick={() => handleBuy(p)}
-                                        className="w-10 h-10 bg-blue-600 text-white rounded-xl active:scale-90 transition-transform shadow-lg shadow-blue-600/10 flex items-center justify-center"
+                                        className="w-10 h-10 bg-navy-800 text-yellow-500 rounded-xl active:scale-90 transition-transform shadow-lg shadow-navy-800/10 flex items-center justify-center"
                                     >
                                         <PlusSquare size={18} />
                                     </button>
@@ -1350,13 +1376,13 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
             
             {/* Promo Banner */}
             <div className="px-6 mt-6">
-                <div className="bg-slate-900 rounded-[2.5rem] p-8 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
+                <div className="bg-navy-900 rounded-[2.5rem] p-8 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
                     <div className="relative z-10">
-                        <Tag className="text-blue-400 mb-4" size={24} />
-                        <h3 className="text-white font-bold text-2xl leading-none italic uppercase tracking-tighter">Elite Hub<br/><span className="text-blue-500">Video Pack</span></h3>
+                        <Tag className="text-yellow-500 mb-4" size={24} />
+                        <h3 className="text-white font-bold text-2xl leading-none italic uppercase tracking-tighter">Elite Hub<br/><span className="text-yellow-500">Video Pack</span></h3>
                         <p className="text-slate-400 text-[10px] mt-4 font-bold uppercase tracking-widest">Get 40% OFF this weekend.</p>
-                        <button className="mt-8 bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.25em] px-8 py-4 rounded-2xl shadow-xl shadow-blue-600/20">
+                        <button className="mt-8 bg-yellow-500 text-navy-950 text-[10px] font-black uppercase tracking-[0.25em] px-8 py-4 rounded-2xl shadow-xl shadow-yellow-500/20">
                             Claim Offer
                         </button>
                     </div>
@@ -1724,16 +1750,16 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
                 <motion.div 
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="w-20 h-20 bg-linear-to-tr from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-8 shadow-2xl shadow-blue-500/20"
+                    className="w-20 h-20 bg-linear-to-tr from-navy-800 to-navy-950 rounded-3xl flex items-center justify-center mb-8 shadow-2xl shadow-navy-950/20"
                 >
-                    <Zap size={40} className="text-white fill-white" />
+                    <Zap size={40} className="text-yellow-500 fill-yellow-500" />
                 </motion.div>
                 <h2 className="text-3xl font-black text-slate-900 mb-4">SINCODE RUNS</h2>
                 <p className="text-slate-400 text-sm max-w-xs leading-relaxed mb-10">
                     Connect with premium elites and exclusive companions. Professional verification required for the elite network.
                 </p>
                 <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 mb-10 w-full text-center">
-                    <p className="text-blue-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Network Access Fee</p>
+                    <p className="text-yellow-600 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Network Access Fee</p>
                     <p className="text-slate-900 text-3xl font-black tracking-tighter">{formatNaira(2000)}</p>
                     <p className="text-slate-400 text-[9px] font-bold mt-2 uppercase">Verified entry to exclusive matching</p>
                 </div>
@@ -1755,7 +1781,7 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
                     <button 
                         onClick={handleEnroll}
                         disabled={isVerifying}
-                        className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-600/10 active:scale-95 transition-all text-sm uppercase tracking-widest disabled:opacity-50"
+                        className="w-full bg-navy-800 text-yellow-500 font-black py-5 rounded-2xl shadow-xl shadow-navy-800/10 active:scale-95 transition-all text-sm uppercase tracking-widest disabled:opacity-50"
                     >
                         Other Payment Options
                     </button>
@@ -1772,8 +1798,8 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
             {/* Header Section */}
             <div className="bg-white px-6 pt-10 pb-6 rounded-b-[2.5rem] shadow-sm border-b border-slate-100">
                 <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-2xl font-black text-slate-900 leading-none">The Network</h2>
-                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500">
+                    <h2 className="text-2xl font-black text-navy-900 leading-none">The Network</h2>
+                    <div className="w-10 h-10 bg-yellow-50 rounded-xl flex items-center justify-center text-yellow-600">
                         <Zap size={20} fill="currentColor" />
                     </div>
                 </div>
@@ -1883,11 +1909,11 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
                                         <div className="flex-1">
                                             <div className="flex items-center gap-1.5">
                                                 <h4 className="text-base font-black text-slate-900 leading-none">{member.name}</h4>
-                                                <BadgeCheck size={16} className="text-blue-500 fill-blue-500 bg-white rounded-full" />
+                                                <BadgeCheck size={16} className="text-yellow-500 fill-yellow-500 bg-white rounded-full" />
                                             </div>
                                             <p className="text-xs text-slate-500 mt-1">{member.age} • {member.location}</p>
                                             <div className="flex gap-2 mt-2">
-                                                 <div className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-[4px] text-[8px] font-black uppercase tracking-tighter">
+                                                 <div className="px-2 py-0.5 bg-yellow-50 text-yellow-600 rounded-[4px] text-[8px] font-black uppercase tracking-tighter">
                                                      {currentCat?.badge}
                                                  </div>
                                                  <div className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-[4px] text-[8px] font-black uppercase tracking-tighter">
@@ -1964,7 +1990,121 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
     );
 };
 
-const ProfileSettings = ({ user, onBack, onSave }: { user: any, onBack: () => void, onSave: (data: any) => void }) => {
+const KYCVerification = ({ user, onBack, onComplete }: { user: any, onBack: () => void, onComplete: (data: any) => void }) => {
+    const [step, setStep] = useState(1);
+    const [idType, setIdType] = useState('BVN');
+    const [idNumber, setIdNumber] = useState('');
+    const [dob, setDob] = useState('');
+    const [isVerifying, setIsVerifying] = useState(false);
+
+    const handleVerify = () => {
+        if (!idNumber || !dob) {
+            alert("Please fill in all fields");
+            return;
+        }
+        setIsVerifying(true);
+        // Simulate real KYC verification with Monnify/Third party
+        setTimeout(() => {
+            setIsVerifying(false);
+            onComplete({
+                kyc_verified: true,
+                kyc_type: idType,
+                kyc_reference: `KYC-${Date.now()}`,
+                kyc_date: new Date().toISOString()
+            });
+        }, 3000);
+    };
+
+    return (
+        <div className="min-h-screen bg-white">
+            <div className="p-6 flex items-center gap-6 border-b border-slate-100">
+                <button onClick={onBack} className="p-3 bg-slate-100 rounded-2xl text-slate-400">
+                    <ArrowLeft size={20} />
+                </button>
+                <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest italic">Identity Verification</h2>
+            </div>
+
+            <div className="p-8 space-y-10">
+                <header className="space-y-4">
+                    <div className="w-14 h-14 bg-navy-800 rounded-2xl flex items-center justify-center text-yellow-500 shadow-xl shadow-navy-800/20">
+                        <ShieldCheck size={28} />
+                    </div>
+                    <div>
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic leading-tight">Complete KYC</h3>
+                        <p className="text-slate-400 text-xs font-medium mt-2 leading-relaxed">To ensure community safety and enable higher transaction limits, please verify your identity.</p>
+                    </div>
+                </header>
+
+                <div className="space-y-8">
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Identification Type</label>
+                        <div className="flex gap-2">
+                            {['BVN', 'NIN', 'Passport'].map(type => (
+                                <button 
+                                    key={type}
+                                    onClick={() => setIdType(type)}
+                                    className={cn(
+                                        "flex-1 py-4 px-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                                        idType === type ? "bg-navy-800 text-yellow-500 border-navy-800 shadow-lg shadow-navy-800/10" : "bg-slate-50 text-slate-400 border-slate-100"
+                                    )}
+                                >
+                                    {type}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                                {idType} Number
+                            </label>
+                            <input 
+                                type="text" 
+                                value={idNumber}
+                                onChange={e => setIdNumber(e.target.value)}
+                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:outline-hidden focus:border-yellow-500" 
+                                placeholder={`Enter ${idType} Number`}
+                            />
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Date of Birth</label>
+                            <input 
+                                type="date" 
+                                value={dob}
+                                onChange={e => setDob(e.target.value)}
+                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:outline-hidden focus:border-yellow-500" 
+                            />
+                        </div>
+                    </div>
+
+                    <div className="bg-yellow-50 border border-yellow-100 rounded-[2rem] p-8 flex items-start gap-4">
+                        <Lock size={20} className="text-yellow-600 shrink-0 mt-1" />
+                        <p className="text-xs text-navy-800 font-medium leading-relaxed italic">
+                            Your data is encrypted and handled according to Nigerian Data Protection Regulations (NDPR). We only use this to verify your identity.
+                        </p>
+                    </div>
+
+                    <button 
+                        onClick={handleVerify}
+                        disabled={isVerifying}
+                        className="w-full bg-navy-800 text-yellow-500 font-black py-5 rounded-2xl text-[10px] uppercase tracking-widest shadow-xl shadow-navy-800/20 active:scale-95 transition-all flex items-center justify-center gap-3"
+                    >
+                        {isVerifying ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-yellow-500/30 border-t-yellow-500 rounded-full animate-spin"></div>
+                                Running Verification...
+                            </>
+                        ) : "Submit Verification"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ProfileSettings = ({ user, onBack, onSave, onKYCClick }: { user: any, onBack: () => void, onSave: (data: any) => void, onKYCClick: () => void }) => {
     const [formData, setFormData] = useState({
         name: user?.name || '',
         avatar: user?.avatar || '',
@@ -2023,16 +2163,44 @@ const ProfileSettings = ({ user, onBack, onSave }: { user: any, onBack: () => vo
                 <button 
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 active:scale-95 disabled:opacity-50"
+                    className="bg-navy-800 text-yellow-500 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-navy-800/20 active:scale-95 disabled:opacity-50"
                 >
                     {isSaving ? "Saving..." : "Save"}
                 </button>
             </div>
 
             <div className="p-6 space-y-8">
+                {/* KYC Section */}
+                <div className="bg-slate-50 border border-slate-100 p-6 rounded-[2rem] flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className={cn(
+                            "w-12 h-12 rounded-xl flex items-center justify-center",
+                            user?.kyc_verified ? "bg-emerald-50 text-emerald-500" : "bg-yellow-50 text-yellow-600"
+                        )}>
+                            {user?.kyc_verified ? <BadgeCheck size={24} /> : <ShieldAlert size={24} />}
+                        </div>
+                        <div>
+                            <p className="text-sm font-black text-slate-900 leading-none">
+                                {user?.kyc_verified ? "Identity Verified" : "Verification Required"}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">
+                                {user?.kyc_verified ? "Tier 2 Limits Enabled" : "Tier 1 Limits Apply"}
+                            </p>
+                        </div>
+                    </div>
+                    {!user?.kyc_verified && (
+                        <button 
+                            onClick={onKYCClick}
+                            className="bg-navy-800 text-yellow-500 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all"
+                        >
+                            Verify
+                        </button>
+                    )}
+                </div>
+
                 {/* Visual Identity */}
                 <div className="space-y-4">
-                    <label className="text-[10px] font-black text-blue-500 uppercase tracking-widest ml-1">Visual Identity</label>
+                    <label className="text-[10px] font-black text-yellow-600 uppercase tracking-widest ml-1">Visual Identity</label>
                     <input 
                         type="file" 
                         ref={coverInputRef} 
@@ -2160,11 +2328,11 @@ const ProfileSettings = ({ user, onBack, onSave }: { user: any, onBack: () => vo
                             onClick={() => setFormData({...formData, is_active: !formData.is_active})}
                             className={cn(
                                 "w-14 h-8 rounded-full p-1 transition-all duration-300 relative",
-                                formData.is_active ? "bg-blue-600" : "bg-slate-200"
+                                formData.is_active ? "bg-navy-800" : "bg-slate-200"
                             )}
                         >
                             <div className={cn(
-                                "w-6 h-6 bg-white rounded-full transition-all duration-300 shadow-md",
+                                "w-6 h-6 bg-yellow-500 rounded-full transition-all duration-300 shadow-md",
                                 formData.is_active ? "translate-x-6" : "translate-x-0"
                             )} />
                         </button>
@@ -2177,12 +2345,42 @@ const ProfileSettings = ({ user, onBack, onSave }: { user: any, onBack: () => vo
 
 const ProfileView = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isVerifyingKYC, setIsVerifyingKYC] = useState(false);
+
+  if (isVerifyingKYC) {
+    return (
+      <KYCVerification 
+        user={user} 
+        onBack={() => setIsVerifyingKYC(false)} 
+        onComplete={async (data) => {
+          // Update DB
+          try {
+            const { error } = await supabase
+              .from('profiles')
+              .update(data as any)
+              .eq('id', user.id);
+            if (error) throw error;
+            onUpdate({ ...user, ...data });
+            alert("Identity verified successfully!");
+          } catch (err) {
+            onUpdate({ ...user, ...data });
+            alert("Demo: Identity verified!");
+          }
+          setIsVerifyingKYC(false);
+        }} 
+      />
+    );
+  }
 
   if (isEditing) {
     return (
       <ProfileSettings 
         user={user} 
         onBack={() => setIsEditing(false)} 
+        onKYCClick={() => {
+            setIsEditing(false);
+            setIsVerifyingKYC(true);
+        }}
         onSave={(data) => {
           onUpdate({ ...user, ...data });
           setIsEditing(false);
@@ -2234,7 +2432,14 @@ const ProfileView = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => v
           </div>
 
           <div className="mt-4">
-            <h2 className="text-xl font-bold text-slate-900 leading-tight">{user?.name || "sinner25"}</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold text-slate-900 leading-tight">{user?.name || "sinner25"}</h2>
+              {user?.kyc_verified && (
+                <div className="bg-emerald-50 text-emerald-500 p-0.5 rounded-full border border-emerald-100" title="KYC Verified">
+                   <ShieldCheck size={14} fill="currentColor" className="text-white" />
+                </div>
+              )}
+            </div>
             <p className="text-slate-400 text-sm font-medium mt-0.5">@{user?.username || "sinner25"}</p>
             <p className="text-slate-400 text-[11px] mt-1.5 ml-0.5 flex items-center gap-1.5">
                Last seen 2 minutes ago
@@ -2243,12 +2448,12 @@ const ProfileView = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => v
 
           <div className="flex gap-5 mt-5 pl-1">
             <div className="flex items-center gap-2">
-               <Heart size={16} className="text-red-500 fill-red-500" strokeWidth={0} />
-               <span className="text-sm font-bold text-slate-900 tracking-tight">0</span>
+               <Heart size={16} className="text-yellow-500 fill-yellow-500" strokeWidth={0} />
+               <span className="text-sm font-bold text-navy-950 tracking-tight">0</span>
             </div>
             <div className="flex items-center gap-2">
-               <Users size={16} className="text-blue-500" />
-               <span className="text-sm font-bold text-slate-900 tracking-tight">0</span>
+               <Users size={16} className="text-yellow-600" />
+               <span className="text-sm font-bold text-navy-950 tracking-tight">0</span>
             </div>
           </div>
 
@@ -2262,7 +2467,7 @@ const ProfileView = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => v
 
       <div className="mt-8 border-b border-slate-100">
          <div className="flex">
-            <button className="flex-1 py-4 text-center font-bold text-sm text-blue-500 border-b-2 border-blue-500">
+            <button className="flex-1 py-4 text-center font-bold text-sm text-yellow-600 border-b-2 border-yellow-600">
                Posts
             </button>
             <button className="flex-1 py-4 text-center font-bold text-sm text-slate-500">
@@ -2273,14 +2478,14 @@ const ProfileView = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => v
 
       <div className="p-4 flex gap-2">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-yellow-500" size={18} />
           <input 
             type="text" 
             placeholder="Search Timeline" 
             className="w-full bg-slate-50 border border-slate-100 rounded-md py-2.5 pl-10 pr-4 text-sm focus:outline-hidden"
           />
         </div>
-        <button className="p-2.5 bg-slate-50 border border-slate-100 rounded-md text-blue-400">
+        <button className="p-2.5 bg-slate-50 border border-slate-100 rounded-md text-yellow-500">
            <RotateCcw size={18} />
         </button>
         <button className="p-2.5 bg-slate-50 border border-slate-100 rounded-md text-slate-400 active:scale-95 transition-transform">
@@ -2361,7 +2566,7 @@ const AdminDashboard = () => {
                     <h2 className="text-3xl font-display font-black text-slate-900 tracking-tighter uppercase italic">Verification Desk</h2>
                     <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Pending Approval Requests</p>
                 </div>
-                <div className="bg-blue-600/10 text-blue-500 px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-blue-600/20">
+                <div className="bg-navy-800/10 text-yellow-600 px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-yellow-600/20">
                     Admin Portal
                 </div>
             </header>
@@ -2369,7 +2574,7 @@ const AdminDashboard = () => {
             <div className="p-6 space-y-6">
                 {loading ? (
                     <div className="py-20 text-center space-y-4 animate-pulse">
-                        <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full mx-auto animate-spin"></div>
+                        <div className="w-12 h-12 border-4 border-yellow-500/20 border-t-yellow-600 rounded-full mx-auto animate-spin"></div>
                         <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest italic">Scanning Applications...</p>
                     </div>
                 ) : pendingCreators.length === 0 ? (
@@ -2716,8 +2921,8 @@ const CreatorDashboard = ({ onUploadClick, user, onUpdateProfile }: { onUploadCl
           transactions: [newTransaction, ...(user.transactions || [])]
         });
       } else {
-        const errorMsg = data.responseMessage || data.error?.responseMessage || data.message || "Unknown error";
-        console.error(`Withdrawal failed: ${errorMsg}`);
+        const errorMsg = data.responseMessage || (typeof data.error === 'object' ? data.error?.responseMessage : data.error) || data.message || "Unknown error";
+        console.error("Withdrawal failure details:", data);
         alert(`Withdrawal failed: ${errorMsg}`);
       }
     } catch (error: any) {

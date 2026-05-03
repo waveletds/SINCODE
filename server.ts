@@ -35,8 +35,13 @@ async function startServer() {
       const secretKey = process.env.MONNIFY_SECRET_KEY;
       const baseUrl = process.env.MONNIFY_BASE_URL;
       
-      if (!apiKey || !secretKey || !baseUrl) {
-        throw new Error("Monnify credentials missing");
+      const missing = [];
+      if (!apiKey) missing.push("MONNIFY_API_KEY");
+      if (!secretKey) missing.push("MONNIFY_SECRET_KEY");
+      if (!baseUrl) missing.push("MONNIFY_BASE_URL");
+
+      if (missing.length > 0) {
+        throw new Error(`Monnify credentials missing: ${missing.join(", ")}`);
       }
 
       const authString = Buffer.from(`${apiKey}:${secretKey}`).toString("base64");
@@ -182,6 +187,40 @@ async function startServer() {
         res.status(error.response?.status || 500).json({ 
           requestSuccessful: false,
           responseMessage: errorData?.responseMessage || errorData?.message || error.message || "Failed to initiate transfer",
+          error: errorData || error.message
+        });
+      }
+    });
+
+    // Monnify: Create Reserved Account (DAN)
+    app.post("/api/monnify/reserved-accounts", async (req, res) => {
+      const { accountReference, accountName, customerEmail, customerName } = req.body;
+      try {
+        const accessToken = await getMonnifyAccessToken();
+        const baseUrl = process.env.MONNIFY_BASE_URL;
+
+        const response = await axios.post(`${baseUrl}/api/v1/bank-transfer/reserved-accounts`, {
+          accountReference: accountReference || `DAN-${Date.now()}`,
+          accountName,
+          currencyCode: "NGN",
+          contractCode: process.env.MONNIFY_CONTRACT_CODE,
+          customerEmail,
+          customerName,
+          getAllAvailableBanks: true
+        }, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        res.json(response.data);
+      } catch (error: any) {
+        const errorData = error.response?.data;
+        console.error("Monnify DAN Error:", JSON.stringify(errorData || error.message, null, 2));
+        res.status(error.response?.status || 500).json({ 
+          requestSuccessful: false,
+          responseMessage: errorData?.responseMessage || errorData?.message || error.message || "Failed to create reserved account",
           error: errorData || error.message
         });
       }
