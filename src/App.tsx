@@ -213,7 +213,10 @@ const FeedPage = ({
   isRecsLoading,
   onCreatorClick,
   bookmarkedPostIds = [],
-  onBookmarkToggle
+  onBookmarkToggle,
+  onRequireLogin,
+  likedPostIds = [],
+  onLikeToggle
 }: { 
   onPostClick: () => void, 
   user: any, 
@@ -226,11 +229,18 @@ const FeedPage = ({
   isRecsLoading: boolean,
   onCreatorClick?: (username: string) => void,
   bookmarkedPostIds?: string[],
-  onBookmarkToggle?: (postId: string) => void
+  onBookmarkToggle?: (postId: string) => void,
+  onRequireLogin?: (reason: string) => void,
+  likedPostIds?: string[],
+  onLikeToggle?: (postId: string) => void
 }) => {
   const [activeCategory, setActiveCategory] = useState('Featured');
 
   const handlePayment = (amount: number, description: string, postId: string) => {
+    if (!user) {
+      onRequireLogin?.("watch");
+      return;
+    }
     // Register the post view in user's history
     onPostViewed(postId);
 
@@ -565,7 +575,13 @@ const FeedPage = ({
                    <p className="text-sm text-slate-700 leading-relaxed">{post.content}</p>
                    
                    <div 
-                    onClick={() => onPostViewed(post.id)}
+                    onClick={() => {
+                      if (!user) {
+                        onRequireLogin?.("watch");
+                        return;
+                      }
+                      onPostViewed(post.id);
+                    }}
                     className="relative aspect-video rounded-xl overflow-hidden group bg-slate-200 cursor-pointer"
                    >
                      <img src={post.image} className={cn("w-full h-full object-cover absolute", !isUnlocked && "blur-2xl opacity-60 scale-110")} loading="lazy" alt="Teaser" />
@@ -591,24 +607,47 @@ const FeedPage = ({
                 {/* Post Bottom Bar */}
                 <div className="px-4 pt-2 flex items-center justify-between">
                    <div className="flex items-center gap-6 text-slate-400">
-                      <div className="flex items-center gap-1.5 p-1 hover:text-yellow-500 transition-colors cursor-pointer">
-                         <Heart size={22} />
-                         <span className="text-xs font-bold">{post.likes}</span>
-                      </div>
+                      {(() => {
+                         const isLiked = likedPostIds.includes(post.id);
+                         return (
+                           <button 
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               if (!user) {
+                                 onRequireLogin?.("like");
+                                 return;
+                               }
+                               onLikeToggle?.(post.id);
+                             }}
+                             className={cn(
+                               "flex items-center gap-1.5 p-1 transition-colors cursor-pointer",
+                               isLiked ? "text-rose-500 hover:text-rose-600" : "text-slate-400 hover:text-rose-500"
+                             )}
+                             id={`like-btn-${post.id}`}
+                           >
+                              <Heart size={22} fill={isLiked ? "currentColor" : "none"} />
+                              <span className="text-xs font-bold">{post.likes + (isLiked ? 1 : 0)}</span>
+                           </button>
+                         );
+                       })()}
                       <div className="flex items-center gap-1.5 p-1 hover:text-yellow-500 transition-colors cursor-pointer">
                          <MessageCircle size={22} />
                          <span className="text-xs font-bold">{post.comments}</span>
                       </div>
                       <div 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onBookmarkToggle?.(post.id);
-                        }}
-                        className={cn(
-                          "flex items-center gap-1.5 p-1 transition-colors cursor-pointer",
-                          isBookmarked ? "text-yellow-500 hover:text-yellow-600" : "text-slate-400 hover:text-yellow-500"
-                        )}
-                      >
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           if (!user) {
+                             onRequireLogin?.("saved");
+                             return;
+                           }
+                           onBookmarkToggle?.(post.id);
+                         }}
+                         className={cn(
+                           "flex items-center gap-1.5 p-1 transition-colors cursor-pointer",
+                           isBookmarked ? "text-yellow-500 hover:text-yellow-600" : "text-slate-400 hover:text-yellow-500"
+                         )}
+                       >
                          <Bookmark size={22} fill={isBookmarked ? "currentColor" : "none"} />
                       </div>
                    </div>
@@ -767,7 +806,13 @@ const SavedPage = ({
                    <p className="text-sm text-slate-700 leading-relaxed">{post.content}</p>
                    
                    <div 
-                    onClick={() => onPostViewed(post.id)}
+                    onClick={() => {
+                      if (!user) {
+                        onRequireLogin?.("watch");
+                        return;
+                      }
+                      onPostViewed(post.id);
+                    }}
                     className="relative aspect-video rounded-xl overflow-hidden group bg-slate-200 cursor-pointer"
                    >
                      <img src={post.image} className={cn("w-full h-full object-cover absolute", !isUnlocked && "blur-2xl opacity-60 scale-110")} loading="lazy" alt="Teaser" />
@@ -802,15 +847,19 @@ const SavedPage = ({
                          <span className="text-xs font-bold">{post.comments}</span>
                       </div>
                       <div 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onBookmarkToggle?.(post.id);
-                        }}
-                        className={cn(
-                          "flex items-center gap-1.5 p-1 transition-colors cursor-pointer",
-                          isBookmarked ? "text-yellow-500 hover:text-yellow-600" : "text-slate-400 hover:text-yellow-500"
-                        )}
-                      >
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           if (!user) {
+                             onRequireLogin?.("saved");
+                             return;
+                           }
+                           onBookmarkToggle?.(post.id);
+                         }}
+                         className={cn(
+                           "flex items-center gap-1.5 p-1 transition-colors cursor-pointer",
+                           isBookmarked ? "text-yellow-500 hover:text-yellow-600" : "text-slate-400 hover:text-yellow-500"
+                         )}
+                       >
                          <Bookmark size={22} fill={isBookmarked ? "currentColor" : "none"} />
                       </div>
                    </div>
@@ -1212,7 +1261,7 @@ const NIGERIAN_STATES = [
   'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT - Abuja', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'
 ];
 
-const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
+const AuthPage = ({ onLogin, onClose }: { onLogin: (user: any) => void, onClose?: () => void }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -1268,6 +1317,41 @@ const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
     }
   };
 
+  const handleGuestLogin = async () => {
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const guestId = 'guest_' + Math.random().toString(36).substring(2, 10);
+      const guestProfile = {
+        id: guestId,
+        name: 'Guest Fan (Nigeria)',
+        username: 'guest_' + guestId.substring(6),
+        email: `${guestId}@sincode.ng`,
+        balance: 100000,
+        state: 'Lagos',
+        location: 'Lagos, Nigeria',
+        interests: ['Fashion & Runway', 'VIP Entertainment & Modeling'],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        isGuest: true
+      };
+
+      try {
+        await setDoc(doc(db, 'profiles', guestId), guestProfile);
+      } catch (dbErr) {
+        console.error("Firestore error creating guest profile, using local fallback:", dbErr);
+      }
+
+      setSuccess('Signed in as Guest successfully!');
+      onLogin(guestProfile);
+    } catch (err: any) {
+      setError(err.message || 'Guest login failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const teasers = [
     { id: 1, image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80', active: true, title: 'BTS: Lagos Fashion Week' },
     { id: 2, image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80', active: false, title: 'Private Studio Session' },
@@ -1275,7 +1359,17 @@ const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-black flex flex-col font-sans">
+    <div className="min-h-screen bg-black flex flex-col font-sans relative">
+       {onClose && (
+         <button 
+           onClick={onClose}
+           className="absolute top-6 right-6 z-50 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all active:scale-90"
+           id="close-auth-btn"
+         >
+           <X size={20} />
+         </button>
+       )}
+
        {/* Top Section: Branding & Logo */}
        <div className="bg-navy-900 px-8 pt-16 pb-16 relative overflow-hidden flex flex-col items-center transition-all duration-500">
           <div className="absolute top-0 inset-x-0 h-full bg-linear-to-b from-yellow-500/5 to-transparent"></div>
@@ -1328,7 +1422,7 @@ const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
           {error && <div className="w-full max-w-sm mb-4 px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold rounded-xl text-center">{error}</div>}
           {success && <div className="w-full max-w-sm mb-4 px-4 py-3 bg-green-500/10 border border-green-500/20 text-green-500 text-xs font-bold rounded-xl text-center">{success}</div>}
           
-          <div className="w-full max-w-sm space-y-6 text-center">
+          <div className="w-full max-w-sm space-y-4 text-center">
              <div className="space-y-2 mb-2">
                 <h2 className="text-xl font-bold text-white tracking-tight uppercase">Access the Sincode Portal</h2>
                 <p className="text-slate-500 text-xs max-w-xs mx-auto">Verify your identity and connect with Africa's most elite creators, designers, and curators.</p>
@@ -1337,7 +1431,7 @@ const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
              <button 
                 onClick={handleGoogleLogin}
                 disabled={isLoading}
-                className="w-full bg-white hover:bg-slate-100 text-black font-black py-5 rounded-2xl shadow-2xl shadow-white/5 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3 disabled:opacity-70 disabled:active:scale-100"
+                className="w-full bg-white hover:bg-slate-100 text-black font-black py-4 rounded-2xl shadow-2xl active:scale-95 transition-all text-xs uppercase tracking-widest flex items-center justify-center gap-3 disabled:opacity-70 disabled:active:scale-100"
              >
                 {isLoading ? (
                    <>
@@ -1351,9 +1445,27 @@ const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
                    </>
                 )}
              </button>
+
+             <button 
+                onClick={handleGuestLogin}
+                disabled={isLoading}
+                className="w-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-yellow-500 font-black py-4 rounded-2xl shadow-2xl active:scale-95 transition-all text-xs uppercase tracking-widest flex items-center justify-center gap-3 disabled:opacity-70 disabled:active:scale-100"
+             >
+                <Zap size={16} className="fill-yellow-500 text-yellow-500" />
+                <span>Instant Guest Login</span>
+             </button>
+
+             {onClose && (
+               <button 
+                  onClick={onClose}
+                  className="w-full bg-transparent hover:underline text-slate-400 font-semibold py-2 text-xs uppercase tracking-wider transition-all"
+               >
+                  Browse as Guest First
+               </button>
+             )}
              
-             <div className="pt-8 text-center opacity-40">
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-4">Secure Google Gateway • Lagos, Nigeria</p>
+             <div className="pt-6 text-center opacity-40">
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-4">Secure Gateway • Lagos, Nigeria</p>
                 <div className="flex justify-center gap-6 text-slate-500">
                    <Home size={18} />
                    <Search size={18} />
@@ -4074,6 +4186,226 @@ const CreatorDashboard = ({ onUploadClick, user, onUpdateProfile }: { onUploadCl
   );
 };
 
+const LockedTabPlaceholder = ({ 
+  tab, 
+  onSignInClick 
+}: { 
+  tab: string, 
+  onSignInClick: () => void 
+}) => {
+  const getPlaceholderDetails = (t: string) => {
+    switch (t) {
+      case 'runs':
+        return {
+          title: 'Runs Matchmaking is Locked',
+          desc: 'Sign in to discover, search, and live-match with premium creators and elite members.',
+          icon: Zap,
+          btnText: 'Unlock Runs'
+        };
+      case 'create':
+        return {
+          title: 'Creator Hub is Locked',
+          desc: 'Sign in to manage your creator profile, drop new exclusive publications, and process fast payouts.',
+          icon: ShieldCheck,
+          btnText: 'Open Creator Hub'
+        };
+      case 'saved':
+        return {
+          title: 'Bookmarks are Locked',
+          desc: 'Sign in to save exclusive posts, compile your catalog, and keep track of your favorite moments.',
+          icon: Bookmark,
+          btnText: 'Access Bookmarks'
+        };
+      case 'profile':
+        return {
+          title: 'Profile details are Locked',
+          desc: 'Sign in to view your statistics, check transaction histories, and customize your personal details.',
+          icon: UserCircle,
+          btnText: 'View My Profile'
+        };
+      case 'messages':
+        return {
+          title: 'Direct Messages are Locked',
+          desc: 'Sign in to start private chats, receive prioritized responses, and converse with creators.',
+          icon: MessageSquare,
+          btnText: 'Unlock Chat'
+        };
+      case 'notifications':
+        return {
+          title: 'Alerts & Activity are Locked',
+          desc: 'Sign in to stay updated on your creator subscriptions, likes, and tips.',
+          icon: Bell,
+          btnText: 'See My Alerts'
+        };
+      default:
+        return {
+          title: 'Feature is Locked',
+          desc: 'This premium portal feature is restricted to registered members only. Connect in seconds.',
+          icon: Lock,
+          btnText: 'Sign In Now'
+        };
+    }
+  };
+
+  const details = getPlaceholderDetails(tab);
+  const Icon = details.icon;
+
+  return (
+    <div className="h-[75vh] flex flex-col items-center justify-center p-8 text-center bg-white font-sans animate-fade-in">
+       <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-3xl flex items-center justify-center mb-6 text-blue-500 shadow-xs">
+          <Icon size={28} />
+       </div>
+       <h3 className="text-xl font-display font-black text-slate-900 uppercase tracking-tight mb-2">
+         {details.title}
+       </h3>
+       <p className="text-slate-500 text-xs max-w-xs leading-relaxed font-semibold mb-6">
+         {details.desc}
+       </p>
+       <button 
+         onClick={onSignInClick}
+         className="bg-blue-600 hover:bg-blue-500 text-white font-black py-4 px-8 rounded-2xl text-xs uppercase tracking-widest shadow-xl shadow-blue-600/15 active:scale-95 transition-all cursor-pointer"
+         id={`locked-btn-${tab}`}
+       >
+         {details.btnText}
+       </button>
+    </div>
+  );
+};
+
+const LoginPromptModal = ({ 
+  reason, 
+  onClose, 
+  onSignInClick 
+}: { 
+  reason: string, 
+  onClose: () => void, 
+  onSignInClick: () => void 
+}) => {
+  const getPromptDetails = (r: string) => {
+    switch (r) {
+      case 'follow':
+        return {
+          title: 'Subscribe & Follow Creators',
+          desc: 'Sign in to subscribe to premium Nigerian creators, view exclusive story feeds, and follow updates.',
+          icon: Users,
+          iconColor: 'text-blue-500 bg-blue-50'
+        };
+      case 'like':
+        return {
+          title: 'Like Exclusive Posts',
+          desc: 'Sign in to like VIP publications, engage with elite content, and show your appreciation.',
+          icon: Heart,
+          iconColor: 'text-rose-500 bg-rose-50'
+        };
+      case 'watch':
+        return {
+          title: 'Watch Exclusive Content',
+          desc: 'Sign in to unlock, purchase, and watch premium videos, high-resolution photo packs, and streams.',
+          icon: Play,
+          iconColor: 'text-amber-500 bg-amber-50'
+        };
+      case 'message':
+        return {
+          title: 'Send Direct Messages',
+          desc: 'Sign in to open a premium chat connection and converse directly with verified elite creators.',
+          icon: MessageSquare,
+          iconColor: 'text-indigo-500 bg-indigo-50'
+        };
+      case 'wallet':
+        return {
+          title: 'Access Digital Wallet',
+          desc: 'Sign in to fund your wallet, track instant payout transactions, and purchase exclusive items.',
+          icon: CreditCard,
+          iconColor: 'text-emerald-500 bg-emerald-50'
+        };
+      case 'saved':
+        return {
+          title: 'Access Bookmarks',
+          desc: 'Sign in to save posts, bookmark publications, and view your saved elite catalog.',
+          icon: Bookmark,
+          iconColor: 'text-yellow-500 bg-yellow-50'
+        };
+      case 'create':
+        return {
+          title: 'Access Creator Hub',
+          desc: 'Sign in to apply as a verified creator, drop new media, and manage your custom hub.',
+          icon: ShieldCheck,
+          iconColor: 'text-teal-500 bg-teal-50'
+        };
+      case 'runs':
+        return {
+          title: 'Runs Matchmaking',
+          desc: 'Sign in to discover, sync, and matchmaking live with premium members and creators.',
+          icon: Zap,
+          iconColor: 'text-purple-500 bg-purple-50'
+        };
+      case 'profile':
+        return {
+          title: 'Access Personal Profile',
+          desc: 'Sign in to view your details, edit your bio, and personalize your recommendation engine.',
+          icon: User,
+          iconColor: 'text-slate-500 bg-slate-50'
+        };
+      default:
+        return {
+          title: 'Sign In Required',
+          desc: 'Sign in to verify your identity and connect with Africa\'s most elite creators, designers, and curators.',
+          icon: Lock,
+          iconColor: 'text-yellow-500 bg-yellow-50'
+        };
+    }
+  };
+
+  const details = getPromptDetails(reason);
+  const Icon = details.icon;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 font-sans">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs cursor-pointer"
+      />
+      
+      <motion.div 
+        initial={{ scale: 0.95, opacity: 0, y: 15 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.95, opacity: 0, y: 15 }}
+        className="bg-white rounded-[2.5rem] border border-slate-100 max-w-sm w-full p-8 relative z-10 shadow-2xl text-center space-y-6 overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/5 blur-3xl rounded-full"></div>
+        
+        <div className={`w-16 h-16 ${details.iconColor} rounded-3xl flex items-center justify-center mx-auto shadow-md`}>
+          <Icon size={28} className="fill-current" />
+        </div>
+
+        <div className="space-y-2">
+          <h3 className="text-xl font-display font-black text-slate-900 uppercase tracking-tight leading-none">{details.title}</h3>
+          <p className="text-slate-500 text-xs font-semibold leading-relaxed px-2">{details.desc}</p>
+        </div>
+
+        <div className="space-y-3 pt-2">
+          <button 
+            onClick={onSignInClick}
+            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl text-xs uppercase tracking-[0.2em] shadow-lg shadow-blue-600/20 active:scale-95 transition-all cursor-pointer"
+          >
+            Go to Portal Sign In
+          </button>
+          
+          <button 
+            onClick={onClose}
+            className="w-full bg-slate-50 border border-slate-200 text-slate-500 font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
+          >
+            Cancel & Browse
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
@@ -4082,6 +4414,11 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Guest & Action Lock States
+  const [likedPostIds, setLikedPostIds] = useState<string[]>([]);
+  const [loginPromptReason, setLoginPromptReason] = useState<string | null>(null);
+  const [showAuthOverlay, setShowAuthOverlay] = useState(false);
+
   // AI Recommendation States
   const [subscriptions, setSubscriptions] = useState<string[]>(['@pokepetit...']);
   const [viewingHistory, setViewingHistory] = useState<string[]>([]);
@@ -4089,7 +4426,25 @@ export default function App() {
   const [isRecsLoading, setIsRecsLoading] = useState<boolean>(false);
   const [selectedCreator, setSelectedCreator] = useState<any>(null);
 
+  const handleLikeToggle = (postId: string) => {
+    if (!currentUser) {
+      setLoginPromptReason("like");
+      return;
+    }
+    setLikedPostIds((prev) => {
+      if (prev.includes(postId)) {
+        return prev.filter(id => id !== postId);
+      } else {
+        return [...prev, postId];
+      }
+    });
+  };
+
   const handleCreatorFollowed = (username: string) => {
+    if (!currentUser) {
+      setLoginPromptReason("follow");
+      return;
+    }
     setSubscriptions((prev) => {
       if (prev.includes(username)) {
         return prev.filter((u) => u !== username);
@@ -4107,7 +4462,10 @@ export default function App() {
   };
 
   const handleBookmarkToggle = async (postId: string) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      setLoginPromptReason("saved");
+      return;
+    }
     
     const currentBookmarks = currentUser.bookmarkedPostIds || [];
     let updatedBookmarks: string[];
@@ -4308,10 +4666,14 @@ export default function App() {
     !currentUser.state
   );
 
-  if (!isLoggedIn) {
+  const isTabLocked = !isLoggedIn && ['runs', 'create', 'saved', 'profile', 'messages', 'notifications', 'settings'].includes(activeTab);
+
+  if (!isLoggedIn && !currentUser) {
     return <AuthPage onLogin={(user) => {
       setCurrentUser(user);
-      setIsLoggedIn(true);
+      if (user && !user.isGuest) {
+        setIsLoggedIn(true);
+      }
     }} />;
   }
 
@@ -4489,7 +4851,20 @@ export default function App() {
                   setSelectedCreator(null);
                   setActiveTab('messages');
                 }}
+                onRequireLogin={(reason) => {
+                  setLoginPromptReason(reason);
+                  setShowAuthOverlay(true);
+                }}
               />
+            </motion.div>
+          ) : isTabLocked ? (
+            <motion.div
+              key="locked-tab"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <LockedTabPlaceholder tab={activeTab} onSignInClick={() => setShowAuthOverlay(true)} />
             </motion.div>
           ) : (
             <>
@@ -4521,6 +4896,12 @@ export default function App() {
                     setSelectedCreator(c);
                   }
                 }}
+                onRequireLogin={(reason) => {
+                  setLoginPromptReason(reason);
+                  setShowAuthOverlay(true);
+                }}
+                likedPostIds={likedPostIds}
+                onLikeToggle={handleLikeToggle}
               />
             </motion.div>
           )}

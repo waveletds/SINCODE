@@ -41,6 +41,7 @@ interface CreatorProfileViewProps {
   viewingHistory: string[];
   onPostViewed: (id: string) => void;
   onMessageClick?: (username: string) => void;
+  onRequireLogin?: (reason: string) => void;
 }
 
 export default function CreatorProfileView({
@@ -52,7 +53,8 @@ export default function CreatorProfileView({
   onCreatorFollowed,
   viewingHistory,
   onPostViewed,
-  onMessageClick
+  onMessageClick,
+  onRequireLogin
 }: CreatorProfileViewProps) {
   const [activeTab, setActiveTab] = useState<'posts' | 'shop' | 'bio'>('posts');
   const [isTipping, setIsTipping] = useState(false);
@@ -149,6 +151,11 @@ export default function CreatorProfileView({
   const subscriptionPrice = creator.price || 1500;
 
   const handleSubscribeClick = async () => {
+    if (!user) {
+      onRequireLogin?.('follow');
+      return;
+    }
+
     if (isFollowed) {
       // Toggle follow off
       onCreatorFollowed(creator.username);
@@ -195,6 +202,11 @@ export default function CreatorProfileView({
   };
 
   const handleSendTip = async () => {
+    if (!user) {
+      onRequireLogin?.('wallet');
+      return;
+    }
+
     const amount = parseInt(tipAmount);
     if (isNaN(amount) || amount <= 0) {
       alert("Please enter a valid tip amount.");
@@ -250,6 +262,11 @@ export default function CreatorProfileView({
   };
 
   const handleProductBuy = async (product: any) => {
+    if (!user) {
+      onRequireLogin?.('wallet');
+      return;
+    }
+
     if ((user?.balance || 0) < product.price) {
       alert(`Insufficient balance. This item is ${formatNaira(product.price)}.`);
       return;
@@ -287,6 +304,11 @@ export default function CreatorProfileView({
   };
 
   const handlePostUnlock = (post: any) => {
+    if (!user) {
+      onRequireLogin?.('watch');
+      return;
+    }
+
     const isUnlocked = viewingHistory.includes(post.id);
     if (isUnlocked || post.price === 0) return;
 
@@ -394,7 +416,13 @@ export default function CreatorProfileView({
             <div className="flex gap-3 justify-center items-center">
               {onMessageClick && (
                 <button 
-                  onClick={() => onMessageClick(creator.username)}
+                  onClick={() => {
+                    if (!user) {
+                      onRequireLogin?.('message');
+                      return;
+                    }
+                    onMessageClick(creator.username);
+                  }}
                   className="px-6 py-3.5 text-xs font-black uppercase tracking-widest bg-white border border-slate-200 rounded-2xl text-slate-700 hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all flex items-center gap-2 shadow-xs"
                 >
                   <MessageSquare size={16} className="text-slate-500" />
