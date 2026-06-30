@@ -66,6 +66,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { db, auth, googleProvider, OperationType, handleFirestoreError } from '@/src/lib/firebase';
+import CreatorProfileView from '@/src/components/CreatorProfileView';
 import { 
   collection, 
   doc, 
@@ -93,6 +94,7 @@ const Navbar = ({ activeTab, setActiveTab, setIsUploading }: { activeTab: string
     { id: 'runs', icon: Zap, label: 'Runs' },
     { id: 'create', icon: ShieldCheck, label: 'Creator' },
     { id: 'store', icon: ShoppingBag, label: 'Shop' },
+    { id: 'saved', icon: Bookmark, label: 'Saved' },
     { id: 'profile', icon: User, label: 'Profile' },
   ];
 
@@ -128,6 +130,7 @@ const DesktopSidebar = ({ activeTab, setActiveTab, setIsUploading }: { activeTab
     { id: 'runs', icon: Zap, label: 'Runs' },
     { id: 'create', icon: ShieldCheck, label: 'Creator' },
     { id: 'store', icon: ShoppingBag, label: 'Shop' },
+    { id: 'saved', icon: Bookmark, label: 'Saved' },
     { id: 'profile', icon: User, label: 'Profile' },
   ];
 
@@ -207,7 +210,10 @@ const FeedPage = ({
   viewingHistory,
   onPostViewed,
   recommendations,
-  isRecsLoading
+  isRecsLoading,
+  onCreatorClick,
+  bookmarkedPostIds = [],
+  onBookmarkToggle
 }: { 
   onPostClick: () => void, 
   user: any, 
@@ -217,7 +223,10 @@ const FeedPage = ({
   viewingHistory: string[],
   onPostViewed: (id: string) => void,
   recommendations: any,
-  isRecsLoading: boolean
+  isRecsLoading: boolean,
+  onCreatorClick?: (username: string) => void,
+  bookmarkedPostIds?: string[],
+  onBookmarkToggle?: (postId: string) => void
 }) => {
   const [activeCategory, setActiveCategory] = useState('Featured');
 
@@ -342,7 +351,13 @@ const FeedPage = ({
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
+                      <div 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          onCreatorClick?.(post.creatorUsername); 
+                        }} 
+                        className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                      >
                         <div className="w-6 h-6 rounded-full overflow-hidden border border-slate-100 bg-slate-50 shrink-0">
                           <img src={post.creatorAvatar || "https://api.dicebear.com/7.x/avataaars/svg"} className="w-full h-full object-cover" loading="lazy" alt="" />
                         </div>
@@ -413,7 +428,10 @@ const FeedPage = ({
               </div>
 
               <div className="relative h-full flex items-center justify-between px-4 z-10">
-                 <div className="flex items-center gap-3">
+                 <div 
+                   onClick={() => onCreatorClick?.(creator.username)}
+                   className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                 >
                     <div className="relative">
                       <div className="w-16 h-16 rounded-full border-2 border-white overflow-hidden bg-slate-100 shadow-sm">
                         <img src={creator.avatar} className="w-full h-full object-cover" loading="lazy" alt={creator.name} />
@@ -506,11 +524,15 @@ const FeedPage = ({
           .map((post) => {
             const isUnlocked = viewingHistory.includes(post.id);
             const isFollowed = subscriptions.includes(post.creatorUsername);
+            const isBookmarked = bookmarkedPostIds.includes(post.id);
             return (
               <div key={post.id} className="bg-white border-b border-slate-100 py-6 space-y-4">
                 {/* Post Header */}
                 <div className="px-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                  <div 
+                    onClick={() => onCreatorClick?.(post.creatorUsername)}
+                    className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                  >
                     <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-100">
                        <img src={post.creatorAvatar} className="w-full h-full object-cover bg-slate-100" loading="lazy" alt="Avatar" />
                     </div>
@@ -577,8 +599,17 @@ const FeedPage = ({
                          <MessageCircle size={22} />
                          <span className="text-xs font-bold">{post.comments}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 p-1 hover:text-yellow-500 transition-colors cursor-pointer">
-                         <Bookmark size={22} />
+                      <div 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onBookmarkToggle?.(post.id);
+                        }}
+                        className={cn(
+                          "flex items-center gap-1.5 p-1 transition-colors cursor-pointer",
+                          isBookmarked ? "text-yellow-500 hover:text-yellow-600" : "text-slate-400 hover:text-yellow-500"
+                        )}
+                      >
+                         <Bookmark size={22} fill={isBookmarked ? "currentColor" : "none"} />
                       </div>
                    </div>
                 </div>
@@ -586,6 +617,209 @@ const FeedPage = ({
             );
           })}
       </section>
+    </div>
+  );
+};
+
+const SavedPage = ({
+  user,
+  onUpdate,
+  subscriptions,
+  onCreatorFollowed,
+  viewingHistory,
+  onPostViewed,
+  onCreatorClick,
+  bookmarkedPostIds = [],
+  onBookmarkToggle
+}: {
+  user: any,
+  onUpdate: (data: any) => void,
+  subscriptions: string[],
+  onCreatorFollowed: (username: string) => void,
+  viewingHistory: string[],
+  onPostViewed: (id: string) => void,
+  onCreatorClick?: (username: string) => void,
+  bookmarkedPostIds?: string[],
+  onBookmarkToggle?: (postId: string) => void
+}) => {
+  const savedPosts = useMemo(() => {
+    return CENTRAL_POSTS.filter(post => bookmarkedPostIds.includes(post.id));
+  }, [bookmarkedPostIds]);
+
+  const handlePayment = (amount: number, description: string, postId: string) => {
+    // Register the post view in user's history
+    onPostViewed(postId);
+
+    // Option to pay with wallet
+    if (confirm(`Unlock with Wallet for ${formatNaira(amount)}?`)) {
+        if ((user?.balance || 0) < amount) {
+            alert("Insufficient wallet balance.");
+            return;
+        }
+
+        onUpdate({
+            ...(user || {}),
+            balance: (user?.balance || 0) - amount,
+            transactions: [{
+                id: `UNLOCK-${Date.now()}`,
+                type: 'purchase',
+                amount: amount,
+                description: `Unlock: ${description}`,
+                date: new Date().toISOString(),
+                status: 'success'
+            }, ...(user?.transactions || [])]
+        });
+        alert("Content unlocked successfully using wallet!");
+        return;
+    }
+
+    initializePayment({
+      amount,
+      customerName: user?.name || "Fan",
+      customerEmail: user?.email || "fan@sincode.ng",
+      paymentReference: `SC-${Date.now()}`,
+      paymentDescription: description,
+      onComplete: (res: any) => {
+        onUpdate({
+            ...user,
+            transactions: [{
+                id: res.transactionReference,
+                type: 'purchase',
+                amount: amount,
+                description: `Unlock: ${description}`,
+                date: new Date().toISOString(),
+                status: 'success'
+            }, ...(user.transactions || [])]
+        });
+        alert("Content unlocked successfully!");
+      },
+      onClose: () => {
+        console.log("Payment window closed");
+      }
+    });
+  };
+
+  return (
+    <div className="pb-24">
+      {/* Header Banner */}
+      <div className="bg-navy-900 text-white px-6 py-10 relative overflow-hidden flex flex-col items-center justify-center text-center">
+        <div className="absolute top-0 inset-x-0 h-full bg-linear-to-b from-yellow-500/5 to-transparent"></div>
+        <div className="relative z-10">
+          <div className="w-12 h-12 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500 mx-auto mb-3">
+            <Bookmark size={24} fill="currentColor" />
+          </div>
+          <h2 className="text-2xl font-display font-black uppercase tracking-tight">Saved Publications</h2>
+          <p className="text-slate-400 text-xs mt-1 max-w-xs mx-auto">Access your bookmarked content, photos, and exclusive creator drops anytime.</p>
+        </div>
+      </div>
+
+      {savedPosts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+          <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 mb-4">
+            <Bookmark size={28} />
+          </div>
+          <h3 className="text-sm font-bold text-slate-700">No saved posts yet</h3>
+          <p className="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">Tap the bookmark icon on any exclusive drop in the VIP feed to keep it here.</p>
+        </div>
+      ) : (
+        <section className="space-y-0">
+          {savedPosts.map((post) => {
+            const isUnlocked = viewingHistory.includes(post.id);
+            const isFollowed = subscriptions.includes(post.creatorUsername);
+            const isBookmarked = bookmarkedPostIds.includes(post.id);
+            return (
+              <div key={post.id} className="bg-white border-b border-slate-100 py-6 space-y-4">
+                {/* Post Header */}
+                <div className="px-4 flex items-center justify-between">
+                  <div 
+                    onClick={() => onCreatorClick?.(post.creatorUsername)}
+                    className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                  >
+                    <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-100">
+                       <img src={post.creatorAvatar} className="w-full h-full object-cover bg-slate-100" loading="lazy" alt="Avatar" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="text-sm font-bold text-slate-900">{post.creatorName}</h3>
+                        <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
+                           <ShieldCheck size={10} className="text-navy-950" strokeWidth={3} />
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-500">{post.creatorUsername} • 2h</p>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => onCreatorFollowed(post.creatorUsername)}
+                    className={cn(
+                      "text-[10px] font-black px-4 py-1.5 rounded-full border transition-all active:scale-95 leading-none uppercase tracking-wider",
+                      isFollowed 
+                        ? "bg-slate-50 text-slate-400 border-slate-200" 
+                        : "bg-navy-800 text-yellow-500 border-navy-800"
+                    )}
+                  >
+                     {isFollowed ? 'Following' : 'Follow'}
+                  </button>
+                </div>
+                
+                {/* Post Content */}
+                <div className="px-4 space-y-4">
+                   <p className="text-sm text-slate-700 leading-relaxed">{post.content}</p>
+                   
+                   <div 
+                    onClick={() => onPostViewed(post.id)}
+                    className="relative aspect-video rounded-xl overflow-hidden group bg-slate-200 cursor-pointer"
+                   >
+                     <img src={post.image} className={cn("w-full h-full object-cover absolute", !isUnlocked && "blur-2xl opacity-60 scale-110")} loading="lazy" alt="Teaser" />
+                     {!isUnlocked && (
+                       <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-black/30 backdrop-blur-xs">
+                          <div className="w-14 h-14 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white mb-3">
+                             <EyeOff size={28} />
+                          </div>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePayment(post.price, `Unlock content from ${post.creatorName}`, post.id);
+                            }}
+                            className="bg-navy-800 text-yellow-500 font-black py-3 px-6 rounded-full text-xs uppercase tracking-widest shadow-lg shadow-navy-800/20 active:scale-95 transition-all border border-yellow-500/10"
+                          >
+                            Unlock for ₦{post.price}
+                          </button>
+                       </div>
+                     )}
+                   </div>
+                </div>
+
+                {/* Post Bottom Bar */}
+                <div className="px-4 pt-2 flex items-center justify-between">
+                   <div className="flex items-center gap-6 text-slate-400">
+                      <div className="flex items-center gap-1.5 p-1 hover:text-red-500 transition-colors cursor-pointer">
+                         <Heart size={22} />
+                         <span className="text-xs font-bold">{post.likes}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 p-1 hover:text-blue-500 transition-colors cursor-pointer">
+                         <MessageCircle size={22} />
+                         <span className="text-xs font-bold">{post.comments}</span>
+                      </div>
+                      <div 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onBookmarkToggle?.(post.id);
+                        }}
+                        className={cn(
+                          "flex items-center gap-1.5 p-1 transition-colors cursor-pointer",
+                          isBookmarked ? "text-yellow-500 hover:text-yellow-600" : "text-slate-400 hover:text-yellow-500"
+                        )}
+                      >
+                         <Bookmark size={22} fill={isBookmarked ? "currentColor" : "none"} />
+                      </div>
+                   </div>
+                </div>
+              </div>
+            );
+          })}
+        </section>
+      )}
     </div>
   );
 };
@@ -598,7 +832,8 @@ const ExplorePage = ({
   viewingHistory,
   onPostViewed,
   recommendations,
-  isRecsLoading
+  isRecsLoading,
+  onCreatorClick
 }: {
   user: any,
   onUpdate: (data: any) => void,
@@ -607,7 +842,8 @@ const ExplorePage = ({
   viewingHistory: string[],
   onPostViewed: (id: string) => void,
   recommendations: any,
-  isRecsLoading: boolean
+  isRecsLoading: boolean,
+  onCreatorClick?: (username: string) => void
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const userInterests = user?.interests || [];
@@ -699,7 +935,10 @@ const ExplorePage = ({
                     <Sparkles size={8} /> Best Match
                   </div>
                   <div>
-                    <div className="flex items-center gap-3 mb-3">
+                    <div 
+                      onClick={() => onCreatorClick?.(creator.username)}
+                      className="flex items-center gap-3 mb-3 cursor-pointer hover:opacity-80 transition-opacity"
+                    >
                       <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-100 bg-slate-50 shrink-0">
                         <img src={creator.avatar || "https://api.dicebear.com/7.x/avataaars/svg"} className="w-full h-full object-cover" loading="lazy" alt="" />
                       </div>
@@ -768,7 +1007,13 @@ const ExplorePage = ({
                   </div>
 
                   <div className="p-5">
-                    <div className="flex items-center gap-2 mb-3">
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCreatorClick?.(post.creatorUsername);
+                      }}
+                      className="flex items-center gap-2 mb-3 cursor-pointer hover:opacity-80 transition-opacity"
+                    >
                       <div className="w-5 h-5 rounded-full overflow-hidden border border-slate-100 bg-slate-50">
                         <img src={post.creatorAvatar} className="w-full h-full object-cover" loading="lazy" alt="" />
                       </div>
@@ -3065,7 +3310,7 @@ const ProfileSettings = ({ user, onBack, onSave, onKYCClick }: { user: any, onBa
     );
 };
 
-const ProfileView = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void }) => {
+const ProfileView = ({ user, onUpdate, onCreatorClick }: { user: any, onUpdate: (data: any) => void, onCreatorClick?: (username: string) => void }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isVerifyingKYC, setIsVerifyingKYC] = useState(false);
 
@@ -3140,7 +3385,7 @@ const ProfileView = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => v
               )}></div>
             </div>
             
-            <div className="flex gap-2 mb-2">
+            <div className="flex gap-2 mb-2 flex-wrap">
                <button 
                 onClick={() => setIsEditing(true)}
                 className="px-4 py-1.5 bg-slate-50 font-bold text-[13px] rounded-full border border-slate-200 text-slate-800 shadow-xs hover:bg-slate-100 transition-colors flex items-center gap-1.5"
@@ -3148,6 +3393,15 @@ const ProfileView = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => v
                   <Settings size={14} className="text-slate-500" />
                   Edit Profile
                </button>
+               {user?.is_verified && (
+                 <button 
+                  onClick={() => onCreatorClick?.(user.username)}
+                  className="px-4 py-1.5 bg-yellow-500 font-bold text-[13px] rounded-full text-navy-950 shadow-xs hover:bg-yellow-400 transition-colors flex items-center gap-1.5"
+                 >
+                    <Eye size={14} />
+                    View Creator View
+                 </button>
+               )}
                <button className="p-1.5 bg-slate-50 rounded-full border border-slate-200 text-slate-800 hover:bg-slate-100 transition-colors">
                   <MoreHorizontal size={20} />
                </button>
@@ -3833,6 +4087,7 @@ export default function App() {
   const [viewingHistory, setViewingHistory] = useState<string[]>([]);
   const [recommendations, setRecommendations] = useState<any>(null);
   const [isRecsLoading, setIsRecsLoading] = useState<boolean>(false);
+  const [selectedCreator, setSelectedCreator] = useState<any>(null);
 
   const handleCreatorFollowed = (username: string) => {
     setSubscriptions((prev) => {
@@ -3849,6 +4104,30 @@ export default function App() {
       if (prev.includes(id)) return prev;
       return [...prev, id];
     });
+  };
+
+  const handleBookmarkToggle = async (postId: string) => {
+    if (!currentUser) return;
+    
+    const currentBookmarks = currentUser.bookmarkedPostIds || [];
+    let updatedBookmarks: string[];
+    if (currentBookmarks.includes(postId)) {
+      updatedBookmarks = currentBookmarks.filter((id: string) => id !== postId);
+    } else {
+      updatedBookmarks = [...currentBookmarks, postId];
+    }
+    
+    // Update local state first for instant responsiveness
+    const updatedUser = { ...currentUser, bookmarkedPostIds: updatedBookmarks };
+    setCurrentUser(updatedUser);
+    
+    // Persist to Firestore
+    try {
+      const userDocRef = doc(db, 'profiles', currentUser.id);
+      await updateDoc(userDocRef, { bookmarkedPostIds: updatedBookmarks });
+    } catch (err) {
+      console.error("Failed to persist bookmark to Firestore:", err);
+    }
   };
 
   // Fetch AI Recommendations based on viewing history, subscriptions, and stated interests (Debounced)
@@ -4190,7 +4469,31 @@ export default function App() {
 
       <main className="max-w-2xl mx-auto md:max-w-3xl lg:max-w-5xl">
         <AnimatePresence mode="wait">
-          {activeTab === 'home' && (
+          {selectedCreator ? (
+            <motion.div
+              key="creator-profile"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <CreatorProfileView 
+                creator={selectedCreator}
+                onBack={() => setSelectedCreator(null)}
+                user={currentUser}
+                onUpdateUser={(updated) => setCurrentUser(updated)}
+                subscriptions={subscriptions}
+                onCreatorFollowed={handleCreatorFollowed}
+                viewingHistory={viewingHistory}
+                onPostViewed={handlePostViewed}
+                onMessageClick={(username) => {
+                  setSelectedCreator(null);
+                  setActiveTab('messages');
+                }}
+              />
+            </motion.div>
+          ) : (
+            <>
+              {activeTab === 'home' && (
             <motion.div
               key="home"
               initial={{ opacity: 0 }}
@@ -4210,6 +4513,40 @@ export default function App() {
                 onPostViewed={handlePostViewed}
                 recommendations={recommendations}
                 isRecsLoading={isRecsLoading}
+                bookmarkedPostIds={currentUser?.bookmarkedPostIds || []}
+                onBookmarkToggle={handleBookmarkToggle}
+                onCreatorClick={(username) => {
+                  const c = CENTRAL_CREATORS.find(item => item.username.toLowerCase() === username.toLowerCase());
+                  if (c) {
+                    setSelectedCreator(c);
+                  }
+                }}
+              />
+            </motion.div>
+          )}
+
+          {activeTab === 'saved' && (
+            <motion.div
+              key="saved"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <SavedPage 
+                user={currentUser}
+                onUpdate={(updated) => setCurrentUser(updated)}
+                subscriptions={subscriptions}
+                onCreatorFollowed={handleCreatorFollowed}
+                viewingHistory={viewingHistory}
+                onPostViewed={handlePostViewed}
+                bookmarkedPostIds={currentUser?.bookmarkedPostIds || []}
+                onBookmarkToggle={handleBookmarkToggle}
+                onCreatorClick={(username) => {
+                  const c = CENTRAL_CREATORS.find(item => item.username.toLowerCase() === username.toLowerCase());
+                  if (c) {
+                    setSelectedCreator(c);
+                  }
+                }}
               />
             </motion.div>
           )}
@@ -4299,7 +4636,31 @@ export default function App() {
                animate={{ opacity: 1 }}
                exit={{ opacity: 0 }}
              >
-               <ProfileView user={currentUser} onUpdate={(data) => setCurrentUser({...currentUser, ...data})} />
+               <ProfileView 
+                 user={currentUser} 
+                 onUpdate={(data) => setCurrentUser({...currentUser, ...data})} 
+                 onCreatorClick={(username) => {
+                   if (username === currentUser?.username) {
+                     const selfCreator = {
+                       id: currentUser.id,
+                       name: currentUser.name,
+                       username: currentUser.username,
+                       avatar: currentUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.id || "sinner"}`,
+                       image: currentUser.cover_photo || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=60",
+                       bio: currentUser.bio || "Welcome to my VIP premium space!",
+                       subscribers: 128,
+                       subscriptionPrice: 1500,
+                       isAIRecommended: false,
+                     };
+                     setSelectedCreator(selfCreator);
+                   } else {
+                     const c = CENTRAL_CREATORS.find(item => item.username.toLowerCase() === username.toLowerCase());
+                     if (c) {
+                       setSelectedCreator(c);
+                     }
+                   }
+                 }}
+               />
              </motion.div>
           )}
 
@@ -4345,6 +4706,12 @@ export default function App() {
                 onPostViewed={handlePostViewed}
                 recommendations={recommendations}
                 isRecsLoading={isRecsLoading}
+                onCreatorClick={(username) => {
+                  const c = CENTRAL_CREATORS.find(item => item.username.toLowerCase() === username.toLowerCase());
+                  if (c) {
+                    setSelectedCreator(c);
+                  }
+                }}
               />
             </motion.div>
           )}
@@ -4364,6 +4731,8 @@ export default function App() {
                    : 'Stay updated with your latest tips, subs, and creator syncs.'}
                </p>
             </div>
+          )}
+            </>
           )}
         </AnimatePresence>
       </main>
