@@ -1,0 +1,105 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. Global Catch-All Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Core Primitives ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Bootstrapped Admin check using the runtime user email
+    function isAdmin() {
+      return isSignedIn() && 
+             request.auth.token.email == 'iqleadsbloger@gmail.com' && 
+             request.auth.token.email_verified == true;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Validation Blueprint (Anti-Update-Gap / Type Safety / Size Limits)
+    function isValidProfile(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.email is string && data.email.size() <= 128
+        && (!('name' in data) || (data.name is string && data.name.size() <= 100))
+        && (!('username' in data) || (data.username is string && data.username.size() <= 50))
+        && (!('phone' in data) || (data.phone is string && data.phone.size() <= 30))
+        && (!('dob' in data) || (data.dob is string && data.dob.size() <= 30))
+        && (!('gender' in data) || (data.gender is string && data.gender.size() <= 20))
+        && (!('state' in data) || (data.state is string && data.state.size() <= 50))
+        && (!('location' in data) || (data.location is string && data.location.size() <= 100))
+        && (!('avatar_url' in data) || (data.avatar_url is string && data.avatar_url.size() <= 500))
+        && (!('bio' in data) || (data.bio is string && data.bio.size() <= 1000))
+        && (!('is_creator' in data) || (data.is_creator is bool))
+        && (!('balance' in data) || (data.balance is number))
+        && (!('verification_status' in data) || (data.verification_status is string && data.verification_status.size() <= 20))
+        && (!('is_verified' in data) || (data.is_verified is bool))
+        && (!('category' in data) || (data.category is string && data.category.size() <= 50))
+        && (!('monnify_account' in data) || (data.monnify_account is map))
+        && (!('created_at' in data) || (data.created_at is string && data.created_at.size() <= 50))
+        && (!('updated_at' in data) || (data.updated_at is string && data.updated_at.size() <= 50));
+    }
+
+    // --- Profiles Collection Match Block ---
+    match /profiles/{userId} {
+      
+      // PII Isolation: Reads restricted to profile owner or the bootstrapped admin
+      allow get: if isOwner(userId) || isAdmin();
+      
+      // Secure List Queries: List queries are only allowed for admins (e.g. to view pending creators)
+      allow list: if isAdmin();
+
+      // Document Creation
+      allow create: if isOwner(userId) 
+                    && isValidId(userId) 
+                    && isValidProfile(incoming());
+
+      // Tiered Action-Based Updates with strict affectedKeys check
+      allow update: if isValidId(userId) && isValidProfile(incoming()) && (
+        // Admin Escape Hatch (for approving/rejecting creator applications)
+        (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['verification_status', 'is_verified', 'updated_at'])) ||
+        
+        // Owner Update Actions:
+        (isOwner(userId) && (
+          // Action 1: Basic details / Profile Setup update
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'name', 'username', 'dob', 'phone', 'gender', 'state', 'location', 
+            'avatar_url', 'bio', 'category', 'is_creator', 'updated_at'
+          ]) ||
+          
+          // Action 2: Monnify Virtual Account registration
+          incoming().diff(existing()).affectedKeys().hasOnly(['monnify_account', 'updated_at']) ||
+          
+          // Action 3: Creator Application Submission
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'verification_status', 'full_name', 'bio', 'category', 'updated_at'
+          ]) ||
+
+          // Action 4: Demo Wallet Balance updates (during login/transactions)
+          incoming().diff(existing()).affectedKeys().hasOnly(['balance', 'transactions', 'updated_at'])
+        ))
+      );
+
+      // Only admins can delete profiles
+      allow delete: if isAdmin();
+    }
+  }
+}

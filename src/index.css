@@ -14,7 +14,7 @@
 }
 
 @layer components {
-  .glass {
+  .glassmorphic {
     @apply bg-navy-900/60 backdrop-blur-xl border border-white/5 shadow-2xl;
   }
   

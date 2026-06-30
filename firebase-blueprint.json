@@ -1,0 +1,105 @@
+{
+  "entities": {
+    "Profile": {
+      "title": "Profile",
+      "description": "User profile containing identity metadata, wallet details, and creator verification status.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique user identifier matching their Firebase Auth UID"
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's display name"
+        },
+        "username": {
+          "type": "string",
+          "description": "Unique username selected by the user"
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number"
+        },
+        "dob": {
+          "type": "string",
+          "description": "Date of birth"
+        },
+        "gender": {
+          "type": "string",
+          "description": "Gender"
+        },
+        "state": {
+          "type": "string",
+          "description": "State of residence in Nigeria"
+        },
+        "location": {
+          "type": "string",
+          "description": "Location display name"
+        },
+        "avatar_url": {
+          "type": "string",
+          "description": "URL to the user's avatar image"
+        },
+        "bio": {
+          "type": "string",
+          "description": "The creator's bio description"
+        },
+        "is_creator": {
+          "type": "boolean",
+          "description": "Flag indicating if the user is a creator"
+        },
+        "balance": {
+          "type": "number",
+          "description": "The wallet balance in NGN (Naira)"
+        },
+        "verification_status": {
+          "type": "string",
+          "description": "Creator application verification status (pending, approved, rejected)"
+        },
+        "is_verified": {
+          "type": "boolean",
+          "description": "Flag indicating if the creator's identity is approved"
+        },
+        "category": {
+          "type": "string",
+          "description": "Creator's content category"
+        },
+        "monnify_account": {
+          "type": "object",
+          "description": "Monnify virtual bank account details for funding/disbursement"
+        },
+        "interests": {
+          "type": "array",
+          "description": "List of user-selected interests/topics"
+        },
+        "transactions": {
+          "type": "array",
+          "description": "List of wallet transactions"
+        },
+        "created_at": {
+          "type": "string",
+          "description": "ISO timestamp when profile was created"
+        },
+        "updated_at": {
+          "type": "string",
+          "description": "ISO timestamp when profile was last updated"
+        }
+      },
+      "required": [
+        "id",
+        "email"
+      ]
+    }
+  },
+  "firestore": {
+    "profiles/{userId}": {
+      "schema": "Profile",
+      "description": "User profiles collection indexed by their authentication UID"
+    }
+  }
+}

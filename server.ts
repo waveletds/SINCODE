@@ -1,15 +1,11 @@
 import express from "express";
 import path from "path";
-import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import axios from "axios";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 async function startServer() {
   console.log("SINCODE: Initializing Server...");
@@ -17,8 +13,46 @@ async function startServer() {
   const PORT = 3000;
 
   // Initialize AI Model inside startServer to avoid top-level issues
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "dummy_key");
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const ai = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      }
+    }
+  });
+
+  async function generateContentWithFallback(prompt: string): Promise<string> {
+    const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-pro"];
+    const maxRetriesPerModel = 2;
+
+    for (const model of models) {
+      for (let attempt = 1; attempt <= maxRetriesPerModel; attempt++) {
+        try {
+          console.log(`Gemini API Call: model=${model}, attempt=${attempt}`);
+          const result = await ai.models.generateContent({
+            model,
+            contents: prompt,
+          });
+          if (result && result.text) {
+            return result.text;
+          }
+          throw new Error("Empty response from Gemini API");
+        } catch (error: any) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          console.warn(`Gemini API warning [model=${model}, attempt=${attempt}]: ${errorMsg}`);
+          
+          if (model === models[models.length - 1] && attempt === maxRetriesPerModel) {
+            throw error;
+          }
+          // Exponential backoff delay
+          const delay = attempt * 1000;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    throw new Error("All Gemini fallback models failed.");
+  }
 
   app.use(express.json());
 
@@ -235,9 +269,7 @@ async function startServer() {
 
       try {
         const prompt = `Analyze the following social media post for harmful, illegal, or extremely violent content according to Nigerian community standards. Return JSON only: { "flagged": boolean, "reason": string }.\n\nContent: "${content}"`;
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        const text = await generateContentWithFallback(prompt);
         
         const jsonStart = text.indexOf('{');
         const jsonEnd = text.lastIndexOf('}') + 1;
@@ -247,6 +279,104 @@ async function startServer() {
       } catch (error) {
         console.error("Moderation Error:", error);
         res.status(500).json({ error: "Moderation failed" });
+      }
+    });
+
+    // AI-Powered Recommendation Engine
+    app.post("/api/recommendations", async (req, res) => {
+      const { viewingHistory, subscriptions, interests, allPosts, allCreators } = req.body;
+      
+      const safeAllPosts = allPosts || [];
+      const safeAllCreators = allCreators || [];
+
+      if (!process.env.GEMINI_API_KEY) {
+        // Fallback recommendations if API key is missing
+        return res.json({
+          recommendedPosts: safeAllPosts.slice(0, 3).map((p: any) => ({
+            ...p,
+            recommendationReason: "Trending inside the SINCODE community right now."
+          })),
+          recommendedCreators: safeAllCreators.slice(0, 2).map((c: any) => ({
+            ...c,
+            recommendationReason: "Highly rated curator in Lagos."
+          }))
+        });
+      }
+
+      try {
+        const prompt = `You are the AI recommendation engine of SINCODE, an elite Nigerian Creator Hub.
+Your task is to analyze a user's viewing history, subscriptions, and stated interests, and select the most relevant content (posts) and creators from the lists provided.
+
+USER PROFILE:
+- Stated Interests: ${JSON.stringify(interests || [])}
+- Viewing History: ${JSON.stringify(viewingHistory || [])}
+- Subscriptions (followed creators): ${JSON.stringify(subscriptions || [])}
+
+AVAILABLE POSTS TO RECOMMEND:
+${JSON.stringify(safeAllPosts.map((p: any) => ({ id: p.id, title: p.title, description: p.description, author: p.author, tags: p.tags })))}
+
+AVAILABLE CREATORS TO RECOMMEND:
+${JSON.stringify(safeAllCreators.map((c: any) => ({ username: c.username, name: c.name, category: c.category, bio: c.bio })))}
+
+INSTRUCTIONS:
+1. Select up to 3 posts from the "AVAILABLE POSTS TO RECOMMEND" that align best with the user's profile.
+2. Select up to 2 creators from the "AVAILABLE CREATORS TO RECOMMEND" that align best with the user's profile.
+3. For each selected post and creator, write a personalized, highly compelling "recommendationReason" in exactly 1 brief sentence (e.g., "Because you followed Lillie and are interested in Fashion" or "Based on your interest in Afrobeat & Music Culture").
+4. Return JSON only in this exact format:
+{
+  "recommendedPostIds": ["id1", "id2", ...],
+  "recommendedPostReasons": { "id1": "reason1", ... },
+  "recommendedCreatorUsernames": ["username1", "username2", ...],
+  "recommendedCreatorReasons": { "username1": "reason1", ... }
+}
+Do not return any markdown code blocks, backticks, or extra text. Just the raw, valid JSON object.`;
+
+        const textRaw = await generateContentWithFallback(prompt);
+        let text = textRaw.trim();
+        
+        // Sanitize output
+        if (text.startsWith("```json")) {
+          text = text.substring(7);
+        }
+        if (text.startsWith("```")) {
+          text = text.substring(3);
+        }
+        if (text.endsWith("```")) {
+          text = text.substring(0, text.length - 3);
+        }
+        text = text.trim();
+
+        const data = JSON.parse(text);
+        
+        // Map back to full objects with custom reasons
+        const recommendedPosts = safeAllPosts
+          .filter((p: any) => data.recommendedPostIds?.includes(p.id?.toString()))
+          .map((p: any) => ({
+            ...p,
+            recommendationReason: data.recommendedPostReasons?.[p.id?.toString()] || "Based on your active interests."
+          }));
+
+        const recommendedCreators = safeAllCreators
+          .filter((c: any) => data.recommendedCreatorUsernames?.includes(c.username))
+          .map((c: any) => ({
+            ...c,
+            recommendationReason: data.recommendedCreatorReasons?.[c.username] || "Suggested creator based on your style."
+          }));
+
+        // Fillers if empty
+        const finalPosts = recommendedPosts.length > 0 ? recommendedPosts : safeAllPosts.slice(0, 3).map((p: any) => ({ ...p, recommendationReason: "Popular content trending in Lagos." }));
+        const finalCreators = recommendedCreators.length > 0 ? recommendedCreators : safeAllCreators.slice(0, 2).map((c: any) => ({ ...c, recommendationReason: "A creator we think you'll love!" }));
+
+        res.json({
+          recommendedPosts: finalPosts,
+          recommendedCreators: finalCreators
+        });
+      } catch (error) {
+        console.error("Recommendations API Error:", error);
+        res.json({
+          recommendedPosts: safeAllPosts.slice(0, 3).map((p: any) => ({ ...p, recommendationReason: "Recommended for you based on popular trending tags." })),
+          recommendedCreators: safeAllCreators.slice(0, 2).map((c: any) => ({ ...c, recommendationReason: "Lagos curator recommended for you." }))
+        });
       }
     });
 

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, ChangeEvent, useRef, FormEvent } from 'react';
+import { useState, useEffect, ChangeEvent, useRef, FormEvent, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Home, 
@@ -60,9 +60,27 @@ import {
   RotateCcw,
   ShieldAlert,
   ListFilter,
-  Download
+  Download,
+  Sliders,
+  Flame,
+  Sparkles
 } from 'lucide-react';
-import { supabase } from '@/src/lib/supabase';
+import { db, auth, googleProvider, OperationType, handleFirestoreError } from '@/src/lib/firebase';
+import { 
+  collection, 
+  doc, 
+  getDoc, 
+  getDocs, 
+  setDoc, 
+  updateDoc, 
+  query, 
+  where 
+} from 'firebase/firestore';
+import { 
+  signInWithPopup, 
+  signOut, 
+  onAuthStateChanged 
+} from 'firebase/auth';
 import { cn, formatNaira } from '@/src/lib/utils';
 import { initializePayment } from '@/src/lib/monnify';
 
@@ -70,7 +88,7 @@ import { initializePayment } from '@/src/lib/monnify';
 
 const Navbar = ({ activeTab, setActiveTab, setIsUploading }: { activeTab: string, setActiveTab: (t: string) => void, setIsUploading: (b: boolean) => void }) => {
   const tabs = [
-    { id: 'home', icon: Home, label: 'Home' },
+    { id: 'home', icon: Flame, label: 'VIP Feed' },
     { id: 'discover', icon: Search, label: 'Explore' },
     { id: 'runs', icon: Zap, label: 'Runs' },
     { id: 'create', icon: ShieldCheck, label: 'Creator' },
@@ -100,6 +118,50 @@ const Navbar = ({ activeTab, setActiveTab, setIsUploading }: { activeTab: string
         );
       })}
     </nav>
+  );
+};
+
+const DesktopSidebar = ({ activeTab, setActiveTab, setIsUploading }: { activeTab: string, setActiveTab: (t: string) => void, setIsUploading: (b: boolean) => void }) => {
+  const tabs = [
+    { id: 'home', icon: Flame, label: 'VIP Feed' },
+    { id: 'discover', icon: Search, label: 'Explore' },
+    { id: 'runs', icon: Zap, label: 'Runs' },
+    { id: 'create', icon: ShieldCheck, label: 'Creator' },
+    { id: 'store', icon: ShoppingBag, label: 'Shop' },
+    { id: 'profile', icon: User, label: 'Profile' },
+  ];
+
+  return (
+    <aside className="fixed top-0 left-0 bottom-0 w-24 bg-white border-r border-slate-100 hidden md:flex flex-col items-center py-8 gap-8 z-50">
+      <div className="mb-4">
+        <Heart size={32} className="text-yellow-500 fill-yellow-500" strokeWidth={1} />
+      </div>
+      <div className="flex-1 flex flex-col gap-5 w-full px-2">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id);
+                if (tab.id === 'create') setIsUploading(false);
+              }}
+              className={cn(
+                "w-full aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 transition-all group relative",
+                isActive ? "text-yellow-500 bg-slate-50 shadow-inner" : "text-slate-400 hover:text-slate-800 hover:bg-slate-50"
+              )}
+            >
+              {isActive && (
+                <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-yellow-500 rounded-r-full" />
+              )}
+              <Icon size={22} strokeWidth={isActive ? 2.5 : 1.5} className="group-hover:scale-105 transition-transform" />
+              <span className="text-[10px] font-semibold tracking-tight mt-1">{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </aside>
   );
 };
 
@@ -136,47 +198,33 @@ const Header = ({ onOpenMenu, user, onWalletClick }: { onOpenMenu: () => void, u
 
 // --- Pages ---
 
-const FeedPage = ({ onPostClick, user, onUpdate }: { onPostClick: () => void, user: any, onUpdate: (data: any) => void }) => {
+const FeedPage = ({ 
+  onPostClick, 
+  user, 
+  onUpdate,
+  subscriptions,
+  onCreatorFollowed,
+  viewingHistory,
+  onPostViewed,
+  recommendations,
+  isRecsLoading
+}: { 
+  onPostClick: () => void, 
+  user: any, 
+  onUpdate: (data: any) => void,
+  subscriptions: string[],
+  onCreatorFollowed: (username: string) => void,
+  viewingHistory: string[],
+  onPostViewed: (id: string) => void,
+  recommendations: any,
+  isRecsLoading: boolean
+}) => {
   const [activeCategory, setActiveCategory] = useState('Featured');
-  
-  const featuredCreators = [
-    { 
-      name: 'PokePetit...', 
-      username: '@pokepetit...', 
-      category: 'VIP', 
-      image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Poke'
-    },
-    { 
-      name: 'Lillie', 
-      username: '@lillikois', 
-      category: 'Straight', 
-      image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lillie'
-    },
-    { 
-      name: 'belladesa...', 
-      username: '@belladesa...', 
-      category: 'LGBTQ+', 
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bella'
-    },
-    { 
-      name: 'bigbootya...', 
-      username: '@bigbootya...', 
-      category: 'Lesbian', 
-      image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Big'
-    },
-  ];
 
-  const [creators] = useState([
-    { id: 1, name: 'TheLittleJui...', handle: 'thelittlejui...', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80', active: true },
-    { id: 2, name: 'Lagos Model', handle: 'ekofinesse', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80', active: true },
-    { id: 3, name: 'Studio Vibes', handle: 'studiovibes', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80', active: false },
-  ]);
+  const handlePayment = (amount: number, description: string, postId: string) => {
+    // Register the post view in user's history
+    onPostViewed(postId);
 
-  const handlePayment = (amount: number, description: string) => {
     // Option to pay with wallet
     if (confirm(`Unlock with Wallet for ${formatNaira(amount)}?`)) {
         if ((user?.balance || 0) < amount) {
@@ -185,8 +233,8 @@ const FeedPage = ({ onPostClick, user, onUpdate }: { onPostClick: () => void, us
         }
 
         onUpdate({
-            ...user,
-            balance: user.balance - amount,
+            ...(user || {}),
+            balance: (user?.balance || 0) - amount,
             transactions: [{
                 id: `UNLOCK-${Date.now()}`,
                 type: 'purchase',
@@ -194,7 +242,7 @@ const FeedPage = ({ onPostClick, user, onUpdate }: { onPostClick: () => void, us
                 description: `Unlock: ${description}`,
                 date: new Date().toISOString(),
                 status: 'success'
-            }, ...(user.transactions || [])]
+            }, ...(user?.transactions || [])]
         });
         alert("Content unlocked successfully using wallet!");
         return;
@@ -226,8 +274,24 @@ const FeedPage = ({ onPostClick, user, onUpdate }: { onPostClick: () => void, us
     });
   };
 
+  // Merge regular and AI recommended creators for the Who to Follow feed
+  const displayCreators = useMemo(() => {
+    const regular = CENTRAL_CREATORS.filter(c => activeCategory === 'Featured' || c.category === activeCategory);
+    if (activeCategory === 'Featured' && recommendations?.recommendedCreators?.length > 0) {
+      // Prioritize AI recommended creators in Featured tab
+      const recs = recommendations.recommendedCreators.map((c: any) => ({
+        ...c,
+        isAIRecommended: true
+      }));
+      const recUsernames = recs.map((r: any) => r.username);
+      const uniqueRegular = regular.filter(c => !recUsernames.includes(c.username));
+      return [...recs, ...uniqueRegular];
+    }
+    return regular;
+  }, [activeCategory, recommendations?.recommendedCreators]);
+
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white min-h-screen pb-16">
       {/* Pills Navigation */}
       <div className="px-4 pt-4 flex items-center justify-between overflow-hidden">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1">
@@ -257,7 +321,73 @@ const FeedPage = ({ onPostClick, user, onUpdate }: { onPostClick: () => void, us
         </div>
       </div>
 
-      {/* Title Section */}
+      {/* AI Recommendation Section */}
+      {recommendations?.recommendedPosts?.length > 0 && (
+        <div className="px-6 py-5 bg-linear-to-r from-yellow-500/5 via-amber-500/5 to-transparent border-y border-slate-100 mt-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="text-yellow-500 fill-yellow-500 animate-pulse shrink-0" size={18} />
+            <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">AI Recommendations For You</h3>
+            {isRecsLoading && (
+              <div className="w-3 h-3 border-2 border-slate-300 border-t-yellow-500 rounded-full animate-spin ml-auto"></div>
+            )}
+          </div>
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            {recommendations.recommendedPosts.map((post: any) => {
+              const isUnlocked = viewingHistory.includes(post.id);
+              return (
+                <div 
+                  key={`rec-${post.id}`} 
+                  onClick={() => onPostViewed(post.id)}
+                  className="bg-white border border-slate-100 rounded-2xl p-4 shrink-0 w-72 shadow-xs hover:border-yellow-200 hover:shadow-md transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full overflow-hidden border border-slate-100 bg-slate-50 shrink-0">
+                          <img src={post.creatorAvatar || "https://api.dicebear.com/7.x/avataaars/svg"} className="w-full h-full object-cover" loading="lazy" alt="" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-800 leading-none">{post.creatorName}</h4>
+                          <p className="text-[9px] text-slate-400">@{post.creatorUsername?.replace(/^@/, '')}</p>
+                        </div>
+                      </div>
+                      <span className="bg-yellow-500/10 text-yellow-600 border border-yellow-500/10 rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-wider flex items-center gap-0.5">
+                        <Sparkles size={8} /> AI Match
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 line-clamp-2 mb-3 font-medium leading-relaxed">{post.content}</p>
+                  </div>
+                  
+                  <div>
+                    {/* Explanation Badge */}
+                    <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-2.5 mb-3">
+                      <p className="text-[10px] text-slate-600 font-bold leading-normal flex items-start gap-1.5">
+                        <span className="text-yellow-500 font-normal">💡</span>
+                        <span>{post.recommendationReason}</span>
+                      </p>
+                    </div>
+
+                    <div className="flex justify-between items-center text-[10px] font-bold">
+                      <span className="text-slate-400 uppercase tracking-wider text-[8px]">{post.category}</span>
+                      <span className={cn(
+                        "px-2.5 py-1 rounded-md text-[10px] border font-black uppercase tracking-wider",
+                        isUnlocked 
+                          ? "text-green-600 bg-green-50 border-green-100" 
+                          : "text-slate-700 bg-slate-50 border-slate-100"
+                      )}>
+                        {isUnlocked ? "Unlocked" : `₦${post.price}`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Who to Follow Header */}
       <div className="px-6 mt-6 flex items-center justify-between">
          <h3 className="text-base font-bold text-slate-800">Who To Follow</h3>
          <div className="flex gap-4">
@@ -266,51 +396,62 @@ const FeedPage = ({ onPostClick, user, onUpdate }: { onPostClick: () => void, us
          </div>
       </div>
 
-      {/* Featured Vertical List - Matches Screenshot */}
+      {/* Creators List with AI badging */}
       <div className="px-4 py-4 space-y-3">
-        {featuredCreators
-          .filter(c => activeCategory === 'Featured' || c.category === activeCategory)
-          .map((creator, idx) => (
-          <motion.div 
-            key={idx}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="group relative h-28 w-full rounded-2xl overflow-hidden border border-slate-100 shadow-xs bg-white"
-          >
-            {/* Background Image / Blur */}
-            <div className="absolute inset-0">
-               <img src={creator.image} className="w-full h-full object-cover blur-sm opacity-40" alt="" />
-               <div className="absolute inset-0 bg-linear-to-r from-white/90 via-white/40 to-transparent"></div>
-            </div>
+        {displayCreators.map((creator, idx) => {
+          const isFollowed = subscriptions.includes(creator.username);
+          return (
+            <motion.div 
+              key={`${creator.username}-${idx}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="group relative h-28 w-full rounded-2xl overflow-hidden border border-slate-100 shadow-xs bg-white"
+            >
+              <div className="absolute inset-0">
+                 <img src={creator.image} className="w-full h-full object-cover blur-sm opacity-40" loading="lazy" alt="" />
+                 <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-transparent"></div>
+              </div>
 
-            <div className="relative h-full flex items-center justify-between px-4 z-10">
-               <div className="flex items-center gap-3">
-                  {/* Avatar with Ring */}
-                  <div className="relative">
-                    <div className="w-16 h-16 rounded-full border-2 border-white overflow-hidden bg-slate-100 shadow-sm">
-                      <img src={creator.avatar} className="w-full h-full object-cover" alt={creator.name} />
+              <div className="relative h-full flex items-center justify-between px-4 z-10">
+                 <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-full border-2 border-white overflow-hidden bg-slate-100 shadow-sm">
+                        <img src={creator.avatar} className="w-full h-full object-cover" loading="lazy" alt={creator.name} />
+                      </div>
+                      <div className="absolute bottom-1 right-1 w-3 h-3 bg-yellow-500 border-2 border-white rounded-full"></div>
                     </div>
-                    {/* Tiny Status Indicator found in screenshot */}
-                    <div className="absolute bottom-1 right-1 w-3 h-3 bg-yellow-500 border-2 border-white rounded-full"></div>
-                  </div>
 
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-1">
-                      <h4 className="text-sm font-bold text-slate-900 tracking-tight">{creator.name}</h4>
-                      <BadgeCheck size={16} className="text-yellow-500 fill-yellow-500 bg-white rounded-full" />
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-1">
+                        <h4 className="text-sm font-bold text-slate-900 tracking-tight">{creator.name}</h4>
+                        <BadgeCheck size={16} className="text-yellow-500 fill-yellow-500 bg-white rounded-full" />
+                      </div>
+                      <p className="text-[11px] text-slate-500 font-medium">{creator.username}</p>
+                      
+                      {creator.isAIRecommended && (
+                        <p className="text-[9px] text-yellow-600 font-black uppercase tracking-wider mt-1 flex items-center gap-0.5">
+                          <Sparkles size={10} className="fill-yellow-500" /> AI Pick
+                        </p>
+                      )}
                     </div>
-                    <p className="text-[11px] text-slate-500 font-medium">{creator.username}</p>
-                  </div>
-               </div>
+                 </div>
 
-               <button className="bg-navy-800 hover:bg-navy-950 text-yellow-500 text-[11px] font-bold px-6 py-2 rounded-full shadow-sm transition-all active:scale-95 leading-none">
-                  Follow
-               </button>
-            </div>
-          </motion.div>
-        ))}
+                 <button 
+                  onClick={() => onCreatorFollowed(creator.username)}
+                  className={cn(
+                    "text-[11px] font-black px-5 py-2.5 rounded-full shadow-xs transition-all active:scale-95 leading-none uppercase tracking-widest border",
+                    isFollowed 
+                      ? "bg-slate-100 text-slate-500 border-slate-200" 
+                      : "bg-navy-800 text-yellow-500 border-navy-800 hover:bg-navy-950"
+                  )}
+                 >
+                    {isFollowed ? 'Following' : 'Follow'}
+                 </button>
+              </div>
+            </motion.div>
+          );
+        })}
         
-        {/* Indicators */}
         <div className="flex justify-center items-center gap-2 pt-2">
            <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
            <div className="w-1.5 h-1.5 bg-slate-200 rounded-full"></div>
@@ -326,11 +467,12 @@ const FeedPage = ({ onPostClick, user, onUpdate }: { onPostClick: () => void, us
       {/* Stories Carousel */}
       <section className="px-4 mt-4">
         <div className="flex gap-3 overflow-x-auto pb-6 scrollbar-hide">
-          {creators.map((c) => (
-            <div key={c.id} className="relative aspect-[2/3] w-32 rounded-2xl overflow-hidden shadow-sm shrink-0 group border border-slate-100">
+          {CENTRAL_CREATORS.map((c, i) => (
+            <div key={i} className="relative aspect-[2/3] w-32 rounded-2xl overflow-hidden shadow-sm shrink-0 group border border-slate-100">
               <img 
                 src={c.image} 
-                className={cn("w-full h-full object-cover", !c.active && "blur-2xl")} 
+                className={cn("w-full h-full object-cover", !c.active && "blur-xs opacity-90")} 
+                loading="lazy"
                 alt={c.name} 
               />
               <div className="absolute inset-x-0 bottom-0 p-3 flex flex-col justify-end bg-gradient-to-t from-black/60 to-transparent h-1/2">
@@ -359,212 +501,525 @@ const FeedPage = ({ onPostClick, user, onUpdate }: { onPostClick: () => void, us
 
       {/* Feed Posts */}
       <section className="space-y-0">
-        {[1, 2, 3].map((post) => (
-          <div key={post} className="bg-white border-b border-slate-100 py-6 space-y-4">
-            {/* Post Header */}
-            <div className="px-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-100">
-                   <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${post === 1 ? 'juice' : post === 2 ? 'angel' : 'model'}`} className="w-full h-full object-cover bg-slate-100" alt="Avatar" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <h3 className="text-sm font-bold text-slate-900">{post === 1 ? 'TheLittleJui...' : post === 2 ? 'Tems Angel' : 'Lagos Model'}</h3>
-                    <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
-                       <ShieldCheck size={10} className="text-navy-950" strokeWidth={3} />
+        {CENTRAL_POSTS
+          .filter(p => activeCategory === 'Featured' || p.category === activeCategory)
+          .map((post) => {
+            const isUnlocked = viewingHistory.includes(post.id);
+            const isFollowed = subscriptions.includes(post.creatorUsername);
+            return (
+              <div key={post.id} className="bg-white border-b border-slate-100 py-6 space-y-4">
+                {/* Post Header */}
+                <div className="px-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-100">
+                       <img src={post.creatorAvatar} className="w-full h-full object-cover bg-slate-100" loading="lazy" alt="Avatar" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="text-sm font-bold text-slate-900">{post.creatorName}</h3>
+                        <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
+                           <ShieldCheck size={10} className="text-navy-950" strokeWidth={3} />
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-500">{post.creatorUsername} • 2h</p>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-500">@{post === 1 ? 'thelittlejui...' : post === 2 ? 'tems_vibes' : 'ekofinesse'} • {post * 2}h</p>
+
+                  <button 
+                    onClick={() => onCreatorFollowed(post.creatorUsername)}
+                    className={cn(
+                      "text-[10px] font-black px-4 py-1.5 rounded-full border transition-all active:scale-95 leading-none uppercase tracking-wider",
+                      isFollowed 
+                        ? "bg-slate-50 text-slate-400 border-slate-200" 
+                        : "bg-navy-800 text-yellow-500 border-navy-800"
+                    )}
+                  >
+                     {isFollowed ? 'Following' : 'Follow'}
+                  </button>
+                </div>
+                
+                {/* Post Content */}
+                <div className="px-4 space-y-4">
+                   <p className="text-sm text-slate-700 leading-relaxed">{post.content}</p>
+                   
+                   <div 
+                    onClick={() => onPostViewed(post.id)}
+                    className="relative aspect-video rounded-xl overflow-hidden group bg-slate-200 cursor-pointer"
+                   >
+                     <img src={post.image} className={cn("w-full h-full object-cover absolute", !isUnlocked && "blur-2xl opacity-60 scale-110")} loading="lazy" alt="Teaser" />
+                     {!isUnlocked && (
+                       <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-black/30 backdrop-blur-xs">
+                          <div className="w-14 h-14 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white mb-3">
+                             <EyeOff size={28} />
+                          </div>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePayment(post.price, `Unlock content from ${post.creatorName}`, post.id);
+                            }}
+                            className="bg-navy-800 text-yellow-500 font-black py-3 px-6 rounded-full text-xs uppercase tracking-widest shadow-lg shadow-navy-800/20 active:scale-95 transition-all border border-yellow-500/10"
+                          >
+                            Unlock for ₦{post.price}
+                          </button>
+                       </div>
+                     )}
+                   </div>
+                </div>
+
+                {/* Post Bottom Bar */}
+                <div className="px-4 pt-2 flex items-center justify-between">
+                   <div className="flex items-center gap-6 text-slate-400">
+                      <div className="flex items-center gap-1.5 p-1 hover:text-yellow-500 transition-colors cursor-pointer">
+                         <Heart size={22} />
+                         <span className="text-xs font-bold">{post.likes}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 p-1 hover:text-yellow-500 transition-colors cursor-pointer">
+                         <MessageCircle size={22} />
+                         <span className="text-xs font-bold">{post.comments}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 p-1 hover:text-yellow-500 transition-colors cursor-pointer">
+                         <Bookmark size={22} />
+                      </div>
+                   </div>
                 </div>
               </div>
-              <button className="text-slate-400 p-2">
-                 <MoreHorizontal size={20} />
-              </button>
-            </div>
-            
-            {/* Post Content */}
-            <div className="px-4 space-y-4">
-               <p className="text-sm text-slate-700 leading-relaxed">
-                 {post === 1 
-                   ? "Squirted again... This time it shot so far My pussy kept twitching and gushing nonstop, I couldn't stop cumming at all~ 💖💕🐳🐳🐳 #squirting" 
-                   : post === 2 
-                   ? "Lagos Fashion Week was a blast! 🇳🇬 Can't wait to show you all the behind the scenes movements. Stay tuned for the exclusive drop. ✨"
-                   : "Early morning sessions at the studio. 📸 New content arriving shortly. Subscribe to get early access to the vault! #StudioVibes"}
-               </p>
-               
-               <div className="relative aspect-video rounded-xl overflow-hidden group bg-slate-200">
-                 <img src={post === 1 ? "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80" : post === 2 ? "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80" : "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80"} className="w-full h-full object-cover blur-3xl opacity-60 absolute scale-125" alt="Teaser" />
-                 <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-black/5">
-                    <div className="w-14 h-14 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white mb-3">
-                       <EyeOff size={28} />
-                    </div>
-                    <button 
-                      onClick={() => handlePayment(2500, "Unlock Content")}
-                      className="bg-navy-800 text-yellow-500 font-bold py-2.5 px-6 rounded-full text-xs uppercase tracking-widest shadow-lg shadow-navy-800/20 active:scale-95 transition-all"
-                    >
-                      Unlock for $5
-                    </button>
-                 </div>
-               </div>
-            </div>
-
-            {/* Post Bottom Bar */}
-            <div className="px-4 pt-2 flex items-center justify-between">
-               <div className="flex items-center gap-6 text-slate-400">
-                  <div className="flex items-center gap-1.5 p-1 hover:text-yellow-500 transition-colors cursor-pointer">
-                     <Heart size={22} />
-                     <span className="text-xs font-bold">{post * 42}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 p-1 hover:text-yellow-500 transition-colors cursor-pointer">
-                     <MessageCircle size={22} />
-                     <span className="text-xs font-bold">{post * 12}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 p-1 hover:text-yellow-500 transition-colors cursor-pointer">
-                     <Bookmark size={22} />
-                  </div>
-               </div>
-            </div>
-          </div>
-        ))}
+            );
+          })}
       </section>
     </div>
   );
 };
+
+const ExplorePage = ({
+  user,
+  onUpdate,
+  subscriptions,
+  onCreatorFollowed,
+  viewingHistory,
+  onPostViewed,
+  recommendations,
+  isRecsLoading
+}: {
+  user: any,
+  onUpdate: (data: any) => void,
+  subscriptions: string[],
+  onCreatorFollowed: (username: string) => void,
+  viewingHistory: string[],
+  onPostViewed: (id: string) => void,
+  recommendations: any,
+  isRecsLoading: boolean
+}) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const userInterests = user?.interests || [];
+
+  const handleToggleInterest = (interest: string) => {
+    let updated: string[];
+    if (userInterests.includes(interest)) {
+      updated = userInterests.filter((i: string) => i !== interest);
+    } else {
+      updated = [...userInterests, interest];
+    }
+    // Update the profile in local state
+    onUpdate({
+      ...user,
+      interests: updated
+    });
+  };
+
+  // Filter posts based on search query
+  const filteredPosts = useMemo(() => {
+    if (!searchQuery) return CENTRAL_POSTS;
+    const query = searchQuery.toLowerCase();
+    return CENTRAL_POSTS.filter(p => 
+      p.content.toLowerCase().includes(query) || 
+      p.creatorName.toLowerCase().includes(query) ||
+      p.tags.some(t => t.toLowerCase().includes(query))
+    );
+  }, [searchQuery]);
+
+  return (
+    <div className="bg-slate-50 min-h-screen pb-24">
+      {/* Header Search bar */}
+      <div className="bg-white border-b border-slate-100 p-4 sticky top-0 z-10">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input
+            type="text"
+            placeholder="Search creators, hashtags, or topics..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-12 pr-4 py-3 text-sm focus:outline-hidden focus:border-yellow-500 focus:bg-white transition-all text-slate-800 placeholder:text-slate-400 font-medium"
+          />
+        </div>
+      </div>
+
+      {/* Stated Interests Dynamic Control */}
+      <div className="p-6 bg-white border-b border-slate-100">
+        <div className="flex items-center gap-2 mb-3">
+          <Sliders className="text-slate-800" size={16} />
+          <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Customize Stated Interests</h3>
+        </div>
+        <p className="text-slate-500 text-xs mb-4 font-medium">Select your preferences to instantly tune your personalized AI Recommendation Engine:</p>
+        <div className="flex flex-wrap gap-2">
+          {ALL_INTERESTS.map((interest) => {
+            const isSelected = userInterests.includes(interest);
+            return (
+              <button
+                key={interest}
+                onClick={() => handleToggleInterest(interest)}
+                className={cn(
+                  "px-4 py-2.5 rounded-full text-xs font-bold transition-all border flex items-center gap-1.5",
+                  isSelected
+                    ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                    : "bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100"
+                )}
+              >
+                {isSelected && <BadgeCheck size={12} className="text-yellow-400 fill-yellow-400" />}
+                {interest}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Recommended Creators Row */}
+      {recommendations?.recommendedCreators?.length > 0 && (
+        <div className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="text-yellow-500 fill-yellow-500 animate-pulse" size={16} />
+            <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">AI Suggested Creators</h3>
+            {isRecsLoading && <div className="w-3 h-3 border-2 border-slate-300 border-t-yellow-500 rounded-full animate-spin ml-auto"></div>}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {recommendations.recommendedCreators.map((creator: any) => {
+              const isFollowed = subscriptions.includes(creator.username);
+              return (
+                <div key={creator.username} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-yellow-500/10 text-yellow-600 border-b border-l border-yellow-500/10 rounded-bl-2xl px-3 py-1 text-[8px] font-black uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles size={8} /> Best Match
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-100 bg-slate-50 shrink-0">
+                        <img src={creator.avatar || "https://api.dicebear.com/7.x/avataaars/svg"} className="w-full h-full object-cover" loading="lazy" alt="" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 leading-none">{creator.name}</h4>
+                        <p className="text-xs text-slate-400 mt-1">@{creator.username.replace(/^@/, '')}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed mb-4 line-clamp-2">{creator.bio}</p>
+                  </div>
+
+                  <div className="bg-yellow-500/5 rounded-2xl p-3 mb-4">
+                    <p className="text-[10px] text-yellow-700 font-bold leading-normal flex items-start gap-1.5">
+                      <span>💡</span>
+                      <span>{creator.recommendationReason}</span>
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => onCreatorFollowed(creator.username)}
+                    className={cn(
+                      "w-full text-xs font-black py-3 rounded-2xl shadow-xs transition-all leading-none uppercase tracking-widest border",
+                      isFollowed
+                        ? "bg-slate-50 text-slate-400 border-slate-200"
+                        : "bg-navy-800 text-yellow-500 border-navy-800 hover:bg-navy-950"
+                    )}
+                  >
+                    {isFollowed ? "Following" : "Subscribe Follow"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* AI Recommended Posts Grid */}
+      <div className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Flame className="text-amber-500 fill-amber-500" size={16} />
+          <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Recommended VIP Feed</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredPosts.map((post) => {
+            const isUnlocked = viewingHistory.includes(post.id);
+            const recReason = recommendations?.recommendedPosts?.find((p: any) => p.id === post.id)?.recommendationReason;
+            return (
+              <div
+                key={post.id}
+                onClick={() => onPostViewed(post.id)}
+                className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-shadow cursor-pointer flex flex-col justify-between"
+              >
+                <div>
+                  <div className="relative aspect-video bg-slate-200">
+                    <img src={post.image} className={cn("w-full h-full object-cover", !isUnlocked && "blur-xl opacity-75 scale-105")} loading="lazy" alt="" />
+                    {!isUnlocked && (
+                      <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+                        <span className="bg-navy-800 text-yellow-500 text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-lg">
+                          Unlock Content
+                        </span>
+                      </div>
+                    )}
+                    <span className="absolute bottom-3 left-3 bg-black/50 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-md backdrop-blur-xs">
+                      {post.category}
+                    </span>
+                  </div>
+
+                  <div className="p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-5 h-5 rounded-full overflow-hidden border border-slate-100 bg-slate-50">
+                        <img src={post.creatorAvatar} className="w-full h-full object-cover" loading="lazy" alt="" />
+                      </div>
+                      <span className="text-xs font-bold text-slate-800">{post.creatorName}</span>
+                    </div>
+                    <p className="text-xs text-slate-600 line-clamp-2 font-medium leading-relaxed">{post.content}</p>
+                  </div>
+                </div>
+
+                <div className="px-5 pb-5">
+                  {recReason ? (
+                    <div className="bg-yellow-500/5 rounded-2xl p-3 mb-3 border border-yellow-500/10">
+                      <p className="text-[9px] text-yellow-700 font-bold leading-normal flex items-start gap-1">
+                        <span>💡</span>
+                        <span>{recReason}</span>
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50 rounded-2xl p-3 mb-3 border border-slate-100">
+                      <p className="text-[9px] text-slate-500 font-bold leading-normal flex items-start gap-1">
+                        <span>🏷️</span>
+                        <span>Topic: {post.tags[0]}</span>
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    <span>₦{post.price} Content</span>
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-md",
+                      isUnlocked ? "text-green-600 bg-green-50" : "text-slate-500 bg-slate-50"
+                    )}>
+                      {isUnlocked ? "Unlocked" : "Locked"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export interface Post {
+  id: string;
+  creatorName: string;
+  creatorUsername: string;
+  creatorAvatar: string;
+  category: string;
+  content: string;
+  image: string;
+  likes: number;
+  comments: number;
+  price: number;
+  tags: string[];
+}
+
+export interface Creator {
+  username: string;
+  name: string;
+  category: string;
+  avatar: string;
+  image: string;
+  bio: string;
+  active: boolean;
+}
+
+export const ALL_INTERESTS = [
+  "Fashion & Runway",
+  "Photography & Visual Art",
+  "Lifestyle & Behind-the-scenes",
+  "Afrobeat & Music Culture",
+  "LGBTQ+ Pride & Community",
+  "VIP Entertainment & Modeling"
+];
+
+export const CENTRAL_POSTS: Post[] = [
+  {
+    id: "post-1",
+    creatorName: "TheLittleJuice",
+    creatorUsername: "@thelittlejuice",
+    creatorAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=juice",
+    category: "VIP",
+    content: "Behind the scenes recording of our private studio session. Exclusive outfits and runway design concepts that we've been gatekeeping. 💖 #VIPFashion #LagosRunway",
+    image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80",
+    likes: 124,
+    comments: 32,
+    price: 2500,
+    tags: ["Fashion & Runway", "VIP Entertainment & Modeling", "Lifestyle & Behind-the-scenes"]
+  },
+  {
+    id: "post-2",
+    creatorName: "Lillie",
+    creatorUsername: "@lillikois",
+    creatorAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Lillie",
+    category: "Straight",
+    content: "Lagos Fashion Week BTS was absolutely insane. Met the top models and creative designers from across West Africa. New collection drop coming shortly! 📸✨ #LagosFashionWeek #BehindTheScenes",
+    image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80",
+    likes: 310,
+    comments: 45,
+    price: 3000,
+    tags: ["Fashion & Runway", "Lifestyle & Behind-the-scenes", "Photography & Visual Art"]
+  },
+  {
+    id: "post-3",
+    creatorName: "Eko Finesse",
+    creatorUsername: "@ekofinesse",
+    creatorAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=model",
+    category: "Featured",
+    content: "Golden hour photography session at Landmark Beach. Capturing the beautiful warm vibe and essence of Lagos culture. Subscribe to unlock the full high-res catalog. 🌴🌊 #LagosVibes #VisualArt",
+    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80",
+    likes: 540,
+    comments: 88,
+    price: 1500,
+    tags: ["Photography & Visual Art", "Lifestyle & Behind-the-scenes"]
+  },
+  {
+    id: "post-4",
+    creatorName: "Burna Beats",
+    creatorUsername: "@burnabeats",
+    creatorAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=music",
+    category: "Featured",
+    content: "Cooked up a legendary new Afrobeat rhythm in the studio tonight. Blending traditional Fuji percussion with modern synth melodies. Only for true sound curators! 🎶🔥 #Afrobeat #MusicCulture",
+    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80",
+    likes: 420,
+    comments: 73,
+    price: 2000,
+    tags: ["Afrobeat & Music Culture", "Lifestyle & Behind-the-scenes"]
+  },
+  {
+    id: "post-5",
+    creatorName: "Bella Desa",
+    creatorUsername: "@belladesa",
+    creatorAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Bella",
+    category: "LGBTQ+",
+    content: "Celebrating community, art, and unapologetic self-expression at our private Lagos fashion rave. Proud to create space for everyone! 🏳️‍🌈✨ #LGBTQPride #EliteModeling",
+    image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&q=80",
+    likes: 290,
+    comments: 51,
+    price: 2200,
+    tags: ["LGBTQ+ Pride & Community", "Fashion & Runway", "VIP Entertainment & Modeling"]
+  }
+];
+
+export const CENTRAL_CREATORS: Creator[] = [
+  {
+    username: "@thelittlejuice",
+    name: "TheLittleJuice",
+    category: "VIP",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=juice",
+    image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80",
+    bio: "Elite digital curator, premium fashion designer & private runway model based in Abuja.",
+    active: true
+  },
+  {
+    username: "@lillikois",
+    name: "Lillie",
+    category: "Straight",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Lillie",
+    image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80",
+    bio: "International runway model, high fashion enthusiast & Lagos Fashion Week visual curator.",
+    active: true
+  },
+  {
+    username: "@ekofinesse",
+    name: "Eko Finesse",
+    category: "Featured",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=model",
+    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80",
+    bio: "Visual artist & travel lifestyle photographer capturing raw, high-contrast stories of Lagos.",
+    active: false
+  },
+  {
+    username: "@burnabeats",
+    name: "Burna Beats",
+    category: "Featured",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=music",
+    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80",
+    bio: "Lagos-based Afrobeat producer & sound designer crafting premium soundpacks and music loops.",
+    active: true
+  },
+  {
+    username: "@belladesa",
+    name: "Bella Desa",
+    category: "LGBTQ+",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Bella",
+    image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&q=80",
+    bio: "Unapologetic designer & modeling coach building inclusive fashion spaces across Nigeria.",
+    active: true
+  }
+];
 
 const NIGERIAN_STATES = [
   'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT - Abuja', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'
 ];
 
 const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
-  const [isSigningUp, setIsSigningUp] = useState(false);
-  const [isForgotPass, setIsForgotPass] = useState(false);
-  const [gender, setGender] = useState('');
-  const [state, setState] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Sign up fields
-  const [name, setName] = useState('');
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [dob, setDob] = useState('');
-  const [password, setPassword] = useState('');
 
-  // Login fields
-  const [loginId, setLoginId] = useState(''); // Email (Supabase requires email for default auth)
-  const [loginPassword, setLoginPassword] = useState('');
-
-  // Recovery fields
-  const [recoveryId, setRecoveryId] = useState('');
-
-  const handleSignUp = async () => {
-    if (!name || !username || !email || !password || !state) {
-      setError('Please fill all required fields');
-      return;
-    }
-    
+  const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError('');
-
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name,
-          username: username.startsWith('@') ? username : `@${username}`,
-          phone,
-          dob,
-          gender,
-          state,
-          location: `${state}, Nigeria`
-        }
-      }
-    });
-
-    setIsLoading(false);
-
-    if (signUpError) {
-      if (signUpError.message === 'Failed to fetch') {
-        setError('Network error: Could not reach Supabase. Please check your internet connection and Supabase environment variables.');
-      } else {
-        setError(signUpError.message);
-      }
-    } else if (data.user) {
-      setSuccess('Account created! Please check your email for verification.');
-      setIsSigningUp(false);
-    }
-  };
-
-  const handleLogin = async () => {
-    if (!loginId || !loginPassword) {
-      setError('Please enter your credentials');
-      return;
-    }
-    
-    setIsLoading(true);
-    setError('');
-
-    let emailToUse = loginId;
-
+    setSuccess('');
     try {
-      // If loginId doesn't look like an email, try to find the profile to get the email
-      if (!loginId.includes('@') || loginId.startsWith('@')) {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('email')
-          .or(`username.eq.${loginId},phone.eq.${loginId},username.eq.@${loginId}`)
-          .maybeSingle();
-        
-        if (profileError) throw profileError;
-
-        if (profile && profile.email) {
-          emailToUse = profile.email;
+      console.log("Initiating Google OAuth via Firebase...");
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      
+      console.log("Firebase login successful, user:", user.uid);
+      setSuccess('Signed in successfully!');
+      
+      // Load or create profile in Firestore
+      const userDocRef = doc(db, 'profiles', user.uid);
+      let userDocSnap;
+      try {
+        userDocSnap = await getDoc(userDocRef);
+      } catch (dbErr) {
+        handleFirestoreError(dbErr, OperationType.GET, `profiles/${user.uid}`);
+      }
+      
+      let profileData;
+      if (userDocSnap.exists()) {
+        profileData = userDocSnap.data();
+      } else {
+        // Create initial profile
+        profileData = {
+          id: user.uid,
+          name: user.displayName || 'Anonymous',
+          username: 'user_' + user.uid.substring(0, 8),
+          email: user.email,
+          balance: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        try {
+          await setDoc(userDocRef, profileData);
+        } catch (dbErr) {
+          handleFirestoreError(dbErr, OperationType.CREATE, `profiles/${user.uid}`);
         }
       }
-
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: emailToUse,
-        password: loginPassword,
-      });
-
-      if (signInError) {
-        setError(signInError.message || 'Invalid credentials or non-registered user');
-      } else if (data.user) {
-        setSuccess('Identity verified! Accessing SINCODE...');
-      }
+      
+      onLogin(profileData);
     } catch (err: any) {
-      console.error("Login attempt failed:", err);
-      if (err.message === 'Failed to fetch') {
-        setError('Network error: Could not reach Supabase. Check your setup.');
-      } else {
-        setError(err.message || 'Login failed');
-      }
+      console.error("Google login failed:", err);
+      setError(err.message || 'Google login failed.');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleRecovery = async () => {
-    if (!recoveryId) {
-       setError('Please enter your email');
-       return;
-    }
-    setIsLoading(true);
-    setError('');
-
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(recoveryId, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-
-    setIsLoading(false);
-
-    if (resetError) {
-      setError(resetError.message);
-    } else {
-      setSuccess('Recovery link sent to your email.');
     }
   };
 
@@ -577,226 +1032,314 @@ const AuthPage = ({ onLogin }: { onLogin: (user: any) => void }) => {
   return (
     <div className="min-h-screen bg-black flex flex-col font-sans">
        {/* Top Section: Branding & Logo */}
-       <div className={cn(
-         "bg-navy-900 px-8 relative overflow-hidden flex flex-col items-center transition-all duration-500",
-         isSigningUp || isForgotPass ? "pt-6 pb-6" : "pt-12 pb-16"
-       )}>
+       <div className="bg-navy-900 px-8 pt-16 pb-16 relative overflow-hidden flex flex-col items-center transition-all duration-500">
           <div className="absolute top-0 inset-x-0 h-full bg-linear-to-b from-yellow-500/5 to-transparent"></div>
           
           <div className="relative z-10 flex flex-col items-center">
              <div className="relative mb-6">
-                <Heart size={isSigningUp || isForgotPass ? 40 : 80} className="text-white fill-white transition-all" strokeWidth={1} />
+                <Heart size={80} className="text-white fill-white transition-all animate-pulse" strokeWidth={1} />
                 <div className="absolute inset-0 flex items-center justify-center">
                    <div className="w-8 h-8 rounded-full bg-navy-900 flex items-center justify-center">
                       <Eye size={18} className="text-yellow-500" strokeWidth={3} />
                    </div>
                 </div>
              </div>
-             <h1 className="text-5xl font-display font-black text-white tracking-tight uppercase italic mb-2">SINCODE</h1>
+             <h1 className="text-5xl font-display font-black text-white tracking-tight uppercase mb-2">SINCODE</h1>
              <p className="text-yellow-500 text-[10px] font-black uppercase tracking-[0.4em]">Elite Nigerian Creator Hub</p>
           </div>
 
-          {/* Featured Teasers Grid - Hide or shrink when signing up or forgot password */}
-          {(!isSigningUp && !isForgotPass) && (
-            <div className="grid grid-cols-3 gap-3 w-full max-w-lg mt-12 relative z-20">
-               {teasers.map((t, i) => (
-                  <div key={t.id} className={cn(
-                     "relative aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/10 group",
-                     i === 1 ? "scale-105 z-10 -rotate-1" : "rotate-1 opacity-80"
-                  )}>
-                     <img src={t.image} className={cn("w-full h-full object-cover", !t.active && "blur-xl")} alt="Teaser" />
-                     <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                        {t.active ? (
-                           <div className="w-10 h-10 glass rounded-full flex items-center justify-center text-white pl-1">
-                              <Play size={20} fill="currentColor" />
-                           </div>
-                        ) : (
-                           <div className="w-10 h-10 glass rounded-full flex items-center justify-center text-white">
-                              <EyeOff size={20} />
-                           </div>
-                        )}
-                     </div>
-                     {t.active && (
-                        <div className="absolute top-2 left-2 flex items-center gap-1.5 glass px-2 py-0.5 rounded-full scale-75 origin-top-left">
-                           <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></div>
-                           <span className="text-[9px] font-black uppercase text-white">Live</span>
-                        </div>
-                     )}
-                  </div>
-               ))}
-            </div>
-          )}
+          {/* Featured Teasers Grid */}
+          <div className="grid grid-cols-3 gap-3 w-full max-w-lg mt-12 relative z-20">
+             {teasers.map((t, i) => (
+                <div key={t.id} className={cn(
+                   "relative aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/10 group",
+                   i === 1 ? "scale-105 z-10 -rotate-1" : "rotate-1 opacity-80"
+                )}>
+                   <img src={t.image} className={cn("w-full h-full object-cover", !t.active && "blur-xl")} loading="lazy" alt="Teaser" />
+                   <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                      {t.active ? (
+                         <div className="w-10 h-10 glass rounded-full flex items-center justify-center text-white pl-1">
+                            <Play size={20} fill="currentColor" />
+                         </div>
+                      ) : (
+                         <div className="w-10 h-10 glass rounded-full flex items-center justify-center text-white">
+                            <EyeOff size={20} />
+                         </div>
+                      )}
+                   </div>
+                   {t.active && (
+                      <div className="absolute top-2 left-2 flex items-center gap-1.5 glass px-2 py-0.5 rounded-full scale-75 origin-top-left">
+                         <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></div>
+                         <span className="text-[9px] font-black uppercase text-white">Live</span>
+                      </div>
+                   )}
+                </div>
+             ))}
+          </div>
        </div>
 
        {/* Bottom Section: Actions */}
-       <div className={cn(
-         "flex-1 bg-black p-8 flex flex-col items-center rounded-t-[3rem] -mt-10 relative z-30 shadow-[0_-20px_40px_rgba(0,0,0,0.8)] border-t border-white/5 overflow-y-auto scrollbar-hide",
-         isSigningUp || isForgotPass ? "justify-start" : "justify-center"
-       )}>
+       <div className="flex-1 bg-black p-8 flex flex-col items-center justify-center rounded-t-[3rem] -mt-10 relative z-30 shadow-[0_-20px_40px_rgba(0,0,0,0.8)] border-t border-white/5 overflow-y-auto scrollbar-hide">
           {error && <div className="w-full max-w-sm mb-4 px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold rounded-xl text-center">{error}</div>}
           {success && <div className="w-full max-w-sm mb-4 px-4 py-3 bg-green-500/10 border border-green-500/20 text-green-500 text-xs font-bold rounded-xl text-center">{success}</div>}
           
-          <div className="w-full max-w-sm space-y-4">
-             {isForgotPass ? (
-                <div className="space-y-6 py-4">
-                   <div className="space-y-2">
-                     <h3 className="text-white font-bold text-lg">Recover Account</h3>
-                     <p className="text-slate-500 text-xs">Enter your email, username or phone number to recover your password.</p>
-                   </div>
-                   <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Identity Information</label>
-                      <input value={recoveryId} onChange={e => setRecoveryId(e.target.value)} type="text" placeholder="Email, Username or Phone" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
-                   </div>
-                   
-                   <button 
-                      onClick={handleRecovery}
-                      className="w-full bg-navy-800 hover:bg-navy-950 text-yellow-500 font-black py-5 rounded-2xl shadow-2xl shadow-navy-800/20 active:scale-95 transition-all text-sm uppercase tracking-widest mt-4"
-                   >
-                      Recover Password
-                   </button>
-                   
-                   <button 
-                      onClick={() => {
-                        setIsForgotPass(false);
-                        setSuccess('');
-                        setError('');
-                      }}
-                      className="w-full text-slate-500 font-black py-2 text-[10px] uppercase tracking-widest hover:text-white transition-colors"
-                   >
-                      Back to Login
-                   </button>
-                </div>
-             ) : isSigningUp ? (
-                <div className="space-y-4 pb-12">
-                   <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Full Name</label>
-                      <input value={name} onChange={e => setName(e.target.value)} type="text" placeholder="e.g. Tunde Olamide" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
-                   </div>
-                   <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Username</label>
-                      <input value={username} onChange={e => setUsername(e.target.value)} type="text" placeholder="@tunde_vibes" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
-                   </div>
-                   <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Email Address</label>
-                      <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="tunde@example.com" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
-                   </div>
-                   <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Password</label>
-                      <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="••••••••" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
-                   </div>
-                   <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Phone Number</label>
-                      <div className="flex gap-2">
-                        <div className="bg-navy-900 border border-white/5 rounded-xl px-4 py-4 text-slate-500 text-sm font-bold">+234</div>
-                        <input value={phone} onChange={e => setPhone(e.target.value)} type="tel" placeholder="801 234 5678" className="flex-1 bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
-                      </div>
-                   </div>
-                   <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Birth Date</label>
-                         <input value={dob} onChange={e => setDob(e.target.value)} type="date" className="w-full bg-navy-900 border border-white/5 rounded-xl px-4 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 transition-colors [color-scheme:dark]" />
-                      </div>
-                      <div className="space-y-1">
-                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Gender</label>
-                         <select 
-                            value={gender}
-                            onChange={(e) => setGender(e.target.value)}
-                            className="w-full bg-navy-900 border border-white/5 rounded-xl px-2 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 appearance-none transition-colors"
-                         >
-                            <option value="" disabled>Select</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="gay">Gay</option>
-                            <option value="lesbian">Lesbian</option>
-                            <option value="bisexual">Bisexual</option>
-                            <option value="lgbtq">LGBTQ+</option>
-                         </select>
-                      </div>
-                   </div>
-                   <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Location (State in Nigeria)</label>
-                      <select 
-                        value={state}
-                        onChange={(e) => setState(e.target.value)}
-                        className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 appearance-none transition-colors"
-                      >
-                         <option value="" disabled>Select State</option>
-                         {NIGERIAN_STATES.map(s => (
-                           <option key={s} value={s}>{s}</option>
-                         ))}
-                      </select>
-                   </div>
-                   
-                   <button 
-                      onClick={handleSignUp}
-                      className="w-full bg-navy-800 hover:bg-navy-950 text-yellow-500 font-black py-5 rounded-2xl shadow-2xl shadow-navy-800/20 active:scale-95 transition-all text-sm uppercase tracking-widest mt-4"
-                   >
-                      Create Elite Account
-                   </button>
-                   
-                   <button 
-                      onClick={() => setIsSigningUp(false)}
-                      className="w-full text-slate-500 font-black py-2 text-[10px] uppercase tracking-widest hover:text-white transition-colors"
-                   >
-                      Already have an account? Login
-                   </button>
-                </div>
-             ) : (
-                <div className="space-y-6">
-                   <div className="space-y-4">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Login Identity</label>
-                        <input value={loginId} onChange={e => setLoginId(e.target.value)} type="text" placeholder="Email, Username or Phone" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between items-center pr-1">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Password</label>
-                          <button 
-                            onClick={() => setIsForgotPass(true)}
-                            className="text-[9px] font-black text-blue-500 uppercase tracking-widest hover:text-blue-400 transition-colors"
-                          >
-                            Forgot Password?
-                          </button>
-                        </div>
-                        <input value={loginPassword} onChange={e => setLoginPassword(e.target.value)} type="password" placeholder="••••••••" className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-4 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" />
-                      </div>
-                   </div>
+          <div className="w-full max-w-sm space-y-6 text-center">
+             <div className="space-y-2 mb-2">
+                <h2 className="text-xl font-bold text-white tracking-tight uppercase">Access the Sincode Portal</h2>
+                <p className="text-slate-500 text-xs max-w-xs mx-auto">Verify your identity and connect with Africa's most elite creators, designers, and curators.</p>
+             </div>
 
-                   <button 
-                      onClick={handleLogin}
-                      disabled={isLoading}
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-2xl shadow-2xl shadow-blue-600/20 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3 disabled:opacity-70 disabled:active:scale-100"
-                   >
-                      {isLoading ? (
-                         <>
-                           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                           <span>Signing In...</span>
-                         </>
-                      ) : (
-                         "Sign In"
-                      )}
-                   </button>
-                   <button 
-                      onClick={() => setIsSigningUp(true)}
-                      className="w-full glass text-white/90 font-black py-5 rounded-2xl active:scale-95 transition-all text-sm uppercase tracking-widest border-white/5 hover:bg-white/5"
-                   >
-                      Create Account
-                   </button>
-                   
-                   <div className="pt-12 text-center opacity-40">
-                      <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-4">Secure Gateway • Lagos, Nigeria</p>
-                      <div className="flex justify-center gap-6 text-slate-500">
-                         <Home size={18} />
-                         <Search size={18} />
-                         <MessageCircle size={18} />
-                      </div>
-                   </div>
+             <button 
+                onClick={handleGoogleLogin}
+                disabled={isLoading}
+                className="w-full bg-white hover:bg-slate-100 text-black font-black py-5 rounded-2xl shadow-2xl shadow-white/5 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3 disabled:opacity-70 disabled:active:scale-100"
+             >
+                {isLoading ? (
+                   <>
+                     <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                     <span>Connecting...</span>
+                   </>
+                ) : (
+                   <>
+                     <span className="font-sans font-black text-lg mr-1 bg-gradient-to-r from-red-500 via-green-500 to-blue-500 bg-clip-text text-transparent">G</span>
+                     <span>Continue with Google</span>
+                   </>
+                )}
+             </button>
+             
+             <div className="pt-8 text-center opacity-40">
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-4">Secure Google Gateway • Lagos, Nigeria</p>
+                <div className="flex justify-center gap-6 text-slate-500">
+                   <Home size={18} />
+                   <Search size={18} />
+                   <MessageCircle size={18} />
                 </div>
-             )}
+             </div>
           </div>
        </div>
     </div>
   );
+};
+
+const UpdateProfilePage = ({ user, onComplete, onLogout }: { user: any, onComplete: (fields: any) => Promise<void>, onLogout: () => void }) => {
+    const [name, setName] = useState(user?.name || '');
+    const [username, setUsername] = useState(user?.username?.startsWith('user_') ? '' : (user?.username || ''));
+    const [phone, setPhone] = useState(user?.phone || '');
+    const [dob, setDob] = useState(user?.dob || '');
+    const [gender, setGender] = useState(user?.gender || '');
+    const [state, setState] = useState(user?.state || '');
+    const [selectedInterests, setSelectedInterests] = useState<string[]>(user?.interests || []);
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const toggleInterest = (interest: string) => {
+        if (selectedInterests.includes(interest)) {
+            setSelectedInterests(selectedInterests.filter(i => i !== interest));
+        } else {
+            setSelectedInterests([...selectedInterests, interest]);
+        }
+    };
+
+    const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+        if (!name || !username || !phone || !state || !gender) {
+            setError('Please fill all required fields');
+            return;
+        }
+
+        if (selectedInterests.length < 2) {
+            setError('Please select at least 2 interests so we can personalize your AI recommendations!');
+            return;
+        }
+
+        const cleanUsername = username.startsWith('@') ? username : `@${username}`;
+
+        // Validate username formatting
+        if (cleanUsername.length < 3) {
+            setError('Username must be at least 3 characters long');
+            return;
+        }
+
+        setIsLoading(true);
+        setError('');
+
+        try {
+            await onComplete({
+                name,
+                username: cleanUsername,
+                phone,
+                dob,
+                gender,
+                state,
+                interests: selectedInterests
+            });
+        } catch (err: any) {
+            setError(err.message || 'Failed to update profile');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-black flex flex-col justify-center items-center p-6">
+            <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-yellow-500/5 to-transparent pointer-events-none"></div>
+            
+            <div className="w-full max-w-md bg-navy-900/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 shadow-2xl relative z-10 space-y-6">
+                <div className="text-center space-y-2">
+                    <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-2 border border-yellow-500/20">
+                        <User className="text-yellow-500" size={32} />
+                    </div>
+                    <h2 className="text-2xl font-display font-black text-white tracking-tight uppercase">Complete Your Profile</h2>
+                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Join the Elite SINCODE Creator Hub</p>
+                </div>
+
+                {error && (
+                    <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold rounded-xl text-center">
+                        {error}
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Full Name</label>
+                        <input 
+                            value={name} 
+                            onChange={e => setName(e.target.value)} 
+                            type="text" 
+                            placeholder="e.g. Tunde Olamide" 
+                            className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-3.5 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" 
+                            required
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Username</label>
+                        <div className="relative">
+                            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-black">@</span>
+                            <input 
+                                value={username.replace(/^@/, '')} 
+                                onChange={e => setUsername(e.target.value)} 
+                                type="text" 
+                                placeholder="tunde_vibes" 
+                                className="w-full bg-navy-900 border border-white/5 rounded-xl pl-9 pr-5 py-3.5 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" 
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Phone Number</label>
+                        <div className="flex gap-2">
+                            <div className="bg-navy-900 border border-white/5 rounded-xl px-4 py-3.5 text-slate-500 text-sm font-bold flex items-center">+234</div>
+                            <input 
+                                value={phone} 
+                                onChange={e => setPhone(e.target.value)} 
+                                type="tel" 
+                                placeholder="801 234 5678" 
+                                className="flex-1 bg-navy-900 border border-white/5 rounded-xl px-5 py-3.5 text-white text-sm focus:outline-hidden focus:border-blue-500 placeholder:text-slate-700 transition-colors" 
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Birth Date</label>
+                            <input 
+                                value={dob} 
+                                onChange={e => setDob(e.target.value)} 
+                                type="date" 
+                                className="w-full bg-navy-900 border border-white/5 rounded-xl px-4 py-3.5 text-white text-sm focus:outline-hidden focus:border-blue-500 transition-colors [color-scheme:dark]" 
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Gender</label>
+                            <select 
+                                value={gender}
+                                onChange={e => setGender(e.target.value)}
+                                className="w-full bg-navy-900 border border-white/5 rounded-xl px-4 py-3.5 text-white text-sm focus:outline-hidden focus:border-blue-500 appearance-none transition-colors"
+                                required
+                            >
+                                <option value="" disabled>Select</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="gay">Gay</option>
+                                <option value="lesbian">Lesbian</option>
+                                <option value="bisexual">Bisexual</option>
+                                <option value="lgbtq">LGBTQ+</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Location (State in Nigeria)</label>
+                        <select 
+                            value={state}
+                            onChange={e => setState(e.target.value)}
+                            className="w-full bg-navy-900 border border-white/5 rounded-xl px-5 py-3.5 text-white text-sm focus:outline-hidden focus:border-blue-500 appearance-none transition-colors"
+                            required
+                        >
+                            <option value="" disabled>Select State</option>
+                            {NIGERIAN_STATES.map(s => (
+                                <option key={s} value={s}>{s}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="space-y-2 pt-2">
+                        <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Select Interests (Min. 2)</label>
+                            <span className="text-[10px] text-yellow-500 font-bold">{selectedInterests.length} Selected</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {ALL_INTERESTS.map((interest) => {
+                                const isSelected = selectedInterests.includes(interest);
+                                return (
+                                    <button
+                                        type="button"
+                                        key={interest}
+                                        onClick={() => toggleInterest(interest)}
+                                        className={cn(
+                                            "px-4 py-2 rounded-full text-xs font-bold transition-all border",
+                                            isSelected
+                                                ? "bg-yellow-500 text-navy-950 border-yellow-500 shadow-lg shadow-yellow-500/20 scale-[1.03]"
+                                                : "bg-navy-900/50 text-slate-400 border-white/5 hover:bg-navy-900"
+                                        )}
+                                    >
+                                        {interest}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <button 
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full bg-yellow-500 hover:bg-yellow-400 text-navy-950 font-black py-4 rounded-2xl shadow-2xl shadow-yellow-500/10 active:scale-95 transition-all text-sm uppercase tracking-widest mt-6 flex items-center justify-center gap-3 disabled:opacity-70 disabled:active:scale-100"
+                    >
+                        {isLoading ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-navy-950/30 border-t-navy-950 rounded-full animate-spin"></div>
+                                <span>Saving...</span>
+                            </>
+                        ) : (
+                            "Save & Continue"
+                        )}
+                    </button>
+                </form>
+
+                <div className="border-t border-white/5 pt-4 text-center">
+                    <button 
+                        onClick={onLogout}
+                        className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors"
+                    >
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void }) => {
@@ -833,14 +1376,12 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                     reference: data.responseBody.accountReference
                 };
                 
-                // Persist to Supabase
+                // Persist to Firebase
                 try {
-                    await supabase
-                        .from('profiles')
-                        .update({ monnify_account: newAccount })
-                        .eq('id', user.id);
+                    await updateDoc(doc(db, 'profiles', user.id), { monnify_account: newAccount });
                 } catch (dbErr) {
                     console.error("DB Update Error (monnify_account):", dbErr);
+                    handleFirestoreError(dbErr, OperationType.UPDATE, `profiles/${user.id}`);
                 }
 
                 onUpdate({ ...user, monnify_account: newAccount });
@@ -881,9 +1422,9 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                     status: 'success'
                 };
                 onUpdate({
-                    ...user,
-                    balance: (user.balance || 0) + amount,
-                    transactions: [newTransaction, ...(user.transactions || [])]
+                    ...(user || {}),
+                    balance: (user?.balance || 0) + amount,
+                    transactions: [newTransaction, ...(user?.transactions || [])]
                 });
                 setFundingAmount('');
                 alert(`Wallet funded successfully with ${formatNaira(amount)}`);
@@ -903,9 +1444,9 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
             status: 'success'
         };
         onUpdate({
-            ...user,
-            balance: (user.balance || 0) + amount,
-            transactions: [newTransaction, ...(user.transactions || [])]
+            ...(user || {}),
+            balance: (user?.balance || 0) + amount,
+            transactions: [newTransaction, ...(user?.transactions || [])]
         });
         alert(`Demo funds of ${formatNaira(amount)} added!`);
     };
@@ -916,7 +1457,7 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                 <div className="w-16 h-16 bg-navy-800 rounded-[1.5rem] flex items-center justify-center shadow-lg shadow-navy-800/20 mb-2">
                     <DollarSign size={32} className="text-yellow-500" />
                 </div>
-                <h2 className="text-3xl font-display font-black text-navy-900 tracking-tighter uppercase italic leading-none">Wallet & Credits</h2>
+                <h2 className="text-3xl font-display font-black text-navy-900 tracking-tighter uppercase leading-none">Wallet & Credits</h2>
                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">Manage your sin-credits</p>
             </header>
 
@@ -967,7 +1508,7 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                             <span className="text-[11px] font-bold text-slate-900">{user.monnify_account.accountName}</span>
                         </div>
                         <div className="pt-4 border-t border-slate-50">
-                            <p className="text-[9px] text-center text-slate-400 font-medium italic">Transfers to this account will fund your wallet automatically.</p>
+                            <p className="text-[9px] text-center text-slate-400 font-medium">Transfers to this account will fund your wallet automatically.</p>
                         </div>
                     </div>
                 ) : (
@@ -976,7 +1517,7 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                             <Monitor size={32} />
                         </div>
                         <div className="space-y-2">
-                            <h5 className="text-sm font-bold text-slate-900 tracking-tight uppercase italic">Virtual Account Number</h5>
+                            <h5 className="text-sm font-bold text-slate-900 tracking-tight uppercase">Virtual Account Number</h5>
                             <p className="text-[10px] text-slate-400 font-medium leading-relaxed max-w-[200px]">Generate a dedicated NGN account to fund your profile with bank transfers.</p>
                         </div>
                         <button 
@@ -1007,7 +1548,7 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                 
                 <div className="bg-slate-50 border border-slate-100 rounded-[2.2rem] p-4 flex items-center gap-3 shadow-sm focus-within:border-blue-200 focus-within:bg-white transition-all">
                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-50">
-                        <span className="font-black text-lg text-navy-800 italic">₦</span>
+                        <span className="font-black text-lg text-navy-800">₦</span>
                     </div>
                     <input 
                         type="number" 
@@ -1030,7 +1571,7 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                 <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] pl-1">Transaction History</h4>
                 {(!user?.transactions || user.transactions.length === 0) ? (
                     <div className="py-20 text-center">
-                        <p className="text-slate-300 text-xs font-bold uppercase tracking-widest italic tracking-tighter">No transactions yet</p>
+                        <p className="text-slate-300 text-xs font-bold uppercase tracking-widest tracking-tighter">No transactions yet</p>
                     </div>
                 ) : (
                     <div className="space-y-4">
@@ -1044,7 +1585,7 @@ const WalletPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => vo
                                         {tx.type === 'funding' ? <Plus size={20} /> : <ShoppingBag size={20} />}
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-slate-900 italic tracking-tight uppercase">{tx.description}</p>
+                                        <p className="text-sm font-bold text-slate-900 tracking-tight uppercase">{tx.description}</p>
                                         <p className="text-[10px] text-slate-400 font-black uppercase mt-0.5">{new Date(tx.date).toLocaleDateString()}</p>
                                     </div>
                                 </div>
@@ -1111,9 +1652,9 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
             };
             
             onUpdate({
-                ...user,
-                balance: user.balance - selectedProduct.price,
-                transactions: [newTransaction, ...(user.transactions || [])]
+                ...(user || {}),
+                balance: (user?.balance || 0) - selectedProduct.price,
+                transactions: [newTransaction, ...(user?.transactions || [])]
             });
             
             handlePaymentComplete();
@@ -1142,10 +1683,10 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                     <button onClick={() => setView('shop')} className="mb-6 p-2 bg-slate-50 text-slate-400 rounded-xl">
                         <ArrowLeft size={20} />
                     </button>
-                    <h2 className="text-2xl font-black text-slate-900 leading-tight uppercase italic mb-8">Checkout</h2>
+                    <h2 className="text-2xl font-black text-slate-900 leading-tight uppercase mb-8">Checkout</h2>
                     
                     <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 mb-8 flex items-center gap-4">
-                        <img src={selectedProduct.image} className="w-16 h-16 rounded-xl object-cover" alt="" />
+                        <img src={selectedProduct.image} className="w-16 h-16 rounded-xl object-cover" loading="lazy" alt="" />
                         <div>
                             <p className="text-sm font-bold text-slate-900">{selectedProduct.name}</p>
                             <p className="text-[10px] text-slate-400 font-medium">{selectedProduct.creator}</p>
@@ -1227,7 +1768,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                     <button onClick={() => setView('checkout')} className="mb-6 p-2 bg-slate-50 text-slate-400 rounded-xl">
                         <ArrowLeft size={20} />
                     </button>
-                    <h2 className="text-2xl font-black text-slate-900 leading-tight uppercase italic mb-8">Payment Details</h2>
+                    <h2 className="text-2xl font-black text-slate-900 leading-tight uppercase mb-8">Payment Details</h2>
 
                     <div className="space-y-4">
                         <button 
@@ -1241,7 +1782,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                                         <Monitor size={12} />
                                         Pay with Wallet
                                     </p>
-                                    <p className="text-lg font-black italic tracking-tighter">SINCODE BALANCE</p>
+                                    <p className="text-lg font-black tracking-tighter">SINCODE BALANCE</p>
                                     <p className="text-xs font-bold mt-2 text-yellow-500">Wallet: {formatNaira(user?.balance || 0)}</p>
                                 </div>
                                 <p className="text-xl font-black text-yellow-500">{formatNaira(selectedProduct.price)}</p>
@@ -1268,7 +1809,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                         </div>
 
                         <div className="bg-yellow-50 border border-yellow-100 rounded-[2rem] p-6">
-                            <p className="text-xs text-navy-800 font-medium italic">Your order will be processed automatically once transfer is detected. Do not close this page.</p>
+                            <p className="text-xs text-navy-800 font-medium">Your order will be processed automatically once transfer is detected. Do not close this page.</p>
                         </div>
 
                         <button 
@@ -1288,7 +1829,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
             <div className="bg-white min-h-screen pb-20">
                 <div className="p-6">
                     <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-2xl font-black text-slate-900 leading-tight uppercase italic">My Orders</h2>
+                        <h2 className="text-2xl font-black text-slate-900 leading-tight uppercase">My Orders</h2>
                         <button onClick={() => setView('shop')} className="p-2 bg-slate-50 text-blue-500 rounded-xl font-bold text-xs uppercase">Store</button>
                     </div>
 
@@ -1306,7 +1847,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                                     className="bg-white border border-slate-100 rounded-[2.5rem] p-6 shadow-sm relative overflow-hidden"
                                 >
                                     <div className="flex gap-4">
-                                        <img src={order.image} className="w-20 h-20 rounded-2xl object-cover" alt="" />
+                                        <img src={order.image} className="w-20 h-20 rounded-2xl object-cover" loading="lazy" alt="" />
                                         <div className="flex-1">
                                             <div className="flex justify-between items-start">
                                                 <h4 className="text-md font-bold text-slate-900 leading-tight">{order.name}</h4>
@@ -1350,7 +1891,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
         <div className="bg-white min-h-screen pb-20">
             <div className="p-6">
                 <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-2xl font-black text-slate-900 leading-tight uppercase italic">Commerce</h2>
+                    <h2 className="text-2xl font-black text-slate-900 leading-tight uppercase">Commerce</h2>
                     <button 
                         onClick={() => setView('cart')}
                         className="relative p-2 bg-slate-50 rounded-xl"
@@ -1383,7 +1924,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                             className="bg-white border border-slate-100 rounded-[2rem] overflow-hidden group shadow-sm flex flex-col h-full active:scale-[0.98] transition-transform"
                         >
                             <div className="relative aspect-square">
-                                <img src={p.image} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt={p.name} />
+                                <img src={p.image} className="w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy" alt={p.name} />
                                 <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 text-[8px] font-black text-slate-800 uppercase tracking-widest shadow-sm">
                                     {p.category}
                                 </div>
@@ -1413,7 +1954,7 @@ const CommercePage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => 
                     <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
                     <div className="relative z-10">
                         <Tag className="text-yellow-500 mb-4" size={24} />
-                        <h3 className="text-white font-bold text-2xl leading-none italic uppercase tracking-tighter">Elite Hub<br/><span className="text-yellow-500">Video Pack</span></h3>
+                        <h3 className="text-white font-bold text-2xl leading-none uppercase tracking-tighter">Elite Hub<br/><span className="text-yellow-500">Video Pack</span></h3>
                         <p className="text-slate-400 text-[10px] mt-4 font-bold uppercase tracking-widest">Get 40% OFF this weekend.</p>
                         <button className="mt-8 bg-yellow-500 text-navy-950 text-[10px] font-black uppercase tracking-[0.25em] px-8 py-4 rounded-2xl shadow-xl shadow-yellow-500/20">
                             Claim Offer
@@ -1535,7 +2076,7 @@ const CreatePostPage = ({ onBack }: { onBack: () => void }) => {
                         {media.map((item, idx) => (
                             <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 group">
                                 {item.type === 'image' ? (
-                                    <img src={item.url} className="w-full h-full object-cover" alt="Preview" />
+                                    <img src={item.url} className="w-full h-full object-cover" loading="lazy" alt="Preview" />
                                 ) : (
                                     <video src={item.url} className="w-full h-full object-cover" controls />
                                 )}
@@ -1619,10 +2160,15 @@ const CreatePostPage = ({ onBack }: { onBack: () => void }) => {
 };
 
 const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void }) => {
-    const [isEnrolled, setIsEnrolled] = useState(false);
-    const [activeSubscription, setActiveSubscription] = useState<string | null>(null);
+    const [isEnrolled, setIsEnrolled] = useState(user?.is_runs_enrolled || false);
+    const [activeSubscription, setActiveSubscription] = useState<string | null>(user?.runs_subscription || null);
     const [selectedMember, setSelectedMember] = useState<any>(null);
     const [isVerifying, setIsVerifying] = useState(false);
+
+    useEffect(() => {
+        setIsEnrolled(user?.is_runs_enrolled || false);
+        setActiveSubscription(user?.runs_subscription || null);
+    }, [user?.is_runs_enrolled, user?.runs_subscription]);
 
     const fee = 2000;
 
@@ -1657,6 +2203,13 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
         ]
     };
 
+    const accessOnlyMembers = [
+        { id: 'ao1', name: 'Tunde Harrison', age: 26, location: 'Yaba, Lagos', bio: 'Just paid my access fee, looking for FWB or Sugar Mummy. Dm me!', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde' },
+        { id: 'ao2', name: 'Chinedu Obi', age: 28, location: 'Enugu', bio: 'Verified access fee paid. Looking to connect before choosing a premium network.', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Chinedu' },
+        { id: 'ao3', name: 'Amara Kalu', age: 23, location: 'Abuja', bio: 'Access network member. Happy to meet premium elites here.', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Amara' },
+        { id: 'ao4', name: 'Seyi Adebayo', age: 25, location: 'Ibadan', bio: 'Student, paid access fee. Let\'s hang out and connect casual.', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Seyi' }
+    ];
+
     const handleEnroll = async () => {
         setIsVerifying(true);
         try {
@@ -1666,18 +2219,31 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
                 customerEmail: user?.email || "member@sincode.ng",
                 paymentReference: `ENROLL-${Date.now()}`,
                 paymentDescription: "Runs Network Enrollment Fee",
-                onComplete: (res: any) => {
-                    onUpdate?.({
+                onComplete: async (res: any) => {
+                    const newTx = {
+                        id: res.transactionReference,
+                        type: 'enrollment',
+                        amount: fee,
+                        description: 'Runs Network Enrollment',
+                        date: new Date().toISOString(),
+                        status: 'success'
+                    };
+                    const updatedUser = {
                         ...user,
-                        transactions: [{
-                            id: res.transactionReference,
-                            type: 'enrollment',
-                            amount: fee,
-                            description: 'Runs Network Enrollment',
-                            date: new Date().toISOString(),
-                            status: 'success'
-                        }, ...(user.transactions || [])]
-                    });
+                        is_runs_enrolled: true,
+                        transactions: [newTx, ...(user?.transactions || [])]
+                    };
+                    if (user?.id) {
+                        try {
+                            await updateDoc(doc(db, 'profiles', user.id), {
+                                is_runs_enrolled: true,
+                                transactions: updatedUser.transactions
+                            });
+                        } catch (err) {
+                            console.error("Firestore enroll save failed:", err);
+                        }
+                    }
+                    onUpdate?.(updatedUser);
                     setIsEnrolled(true);
                     setIsVerifying(false);
                 },
@@ -1690,30 +2256,45 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
         }
     };
 
-    const handleWalletEnroll = () => {
+    const handleWalletEnroll = async () => {
         if ((user?.balance || 0) < fee) {
             alert("Insufficient wallet balance.");
             return;
         }
 
         setIsVerifying(true);
-        setTimeout(() => {
-            onUpdate?.({
-                ...user,
-                balance: user.balance - fee,
-                transactions: [{
-                    id: `RUNS-${Date.now()}`,
-                    type: 'enrollment',
-                    amount: fee,
-                    description: 'Runs Network Enrollment (Wallet)',
-                    date: new Date().toISOString(),
-                    status: 'success'
-                }, ...(user.transactions || [])]
-            });
-            setIsEnrolled(true);
-            setIsVerifying(false);
-            alert("Enrolled successfully using wallet balance!");
-        }, 1500);
+        const updatedUser = {
+            ...(user || {}),
+            balance: (user?.balance || 0) - fee,
+            is_runs_enrolled: true,
+            transactions: [{
+                id: `RUNS-${Date.now()}`,
+                type: 'enrollment',
+                amount: fee,
+                description: 'Runs Network Enrollment (Wallet)',
+                date: new Date().toISOString(),
+                status: 'success'
+            }, ...(user?.transactions || [])]
+        };
+
+        if (user?.id) {
+            try {
+                await updateDoc(doc(db, 'profiles', user.id), {
+                    balance: updatedUser.balance,
+                    is_runs_enrolled: true,
+                    transactions: updatedUser.transactions
+                });
+            } catch (err) {
+                console.error("Wallet enroll save failed:", err);
+                setIsVerifying(false);
+                alert("Database save failed. Please try again.");
+                return;
+            }
+        }
+        onUpdate?.(updatedUser);
+        setIsEnrolled(true);
+        setIsVerifying(false);
+        alert("Enrolled successfully using wallet balance!");
     };
 
     const handleSubscribe = async (cat: any) => {
@@ -1724,23 +2305,37 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
                 return;
             }
             setIsVerifying(true);
-            setTimeout(() => {
-                onUpdate({
-                    ...user,
-                    balance: user.balance - cat.price,
-                    transactions: [{
-                        id: `SUB-${cat.id}-${Date.now()}`,
-                        type: 'subscription',
-                        amount: cat.price,
-                        description: `${cat.label} Subscription (Wallet)`,
-                        date: new Date().toISOString(),
-                        status: 'success'
-                    }, ...(user.transactions || [])]
-                });
-                setActiveSubscription(cat.id);
-                setIsVerifying(false);
-                alert("Subscription active!");
-            }, 1000);
+            const updatedUser = {
+                ...(user || {}),
+                balance: (user?.balance || 0) - cat.price,
+                runs_subscription: cat.id,
+                transactions: [{
+                    id: `SUB-${cat.id}-${Date.now()}`,
+                    type: 'subscription',
+                    amount: cat.price,
+                    description: `${cat.label} Subscription (Wallet)`,
+                    date: new Date().toISOString(),
+                    status: 'success'
+                }, ...(user?.transactions || [])]
+            };
+            if (user?.id) {
+                try {
+                    await updateDoc(doc(db, 'profiles', user.id), {
+                        balance: updatedUser.balance,
+                        runs_subscription: cat.id,
+                        transactions: updatedUser.transactions
+                    });
+                } catch (err) {
+                    console.error("Subscription save failed:", err);
+                    setIsVerifying(false);
+                    alert("Subscription failed to save.");
+                    return;
+                }
+            }
+            onUpdate?.(updatedUser);
+            setActiveSubscription(cat.id);
+            setIsVerifying(false);
+            alert("Subscription active!");
             return;
         }
 
@@ -1752,19 +2347,31 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
                 customerEmail: user?.email || "member@sincode.ng",
                 paymentReference: `SUB-${cat.id}-${Date.now()}`,
                 paymentDescription: `${cat.label} Monthly Subscription`,
-                onComplete: (res: any) => {
-                    console.log("Subscription Success", res);
-                    onUpdate({
+                onComplete: async (res: any) => {
+                    const newTx = {
+                        id: res.transactionReference,
+                        type: 'subscription',
+                        amount: cat.price,
+                        description: `${cat.label} Subscription`,
+                        date: new Date().toISOString(),
+                        status: 'success'
+                    };
+                    const updatedUser = {
                         ...user,
-                        transactions: [{
-                            id: res.transactionReference,
-                            type: 'subscription',
-                            amount: cat.price,
-                            description: `${cat.label} Subscription`,
-                            date: new Date().toISOString(),
-                            status: 'success'
-                        }, ...(user.transactions || [])]
-                    });
+                        runs_subscription: cat.id,
+                        transactions: [newTx, ...(user?.transactions || [])]
+                    };
+                    if (user?.id) {
+                        try {
+                            await updateDoc(doc(db, 'profiles', user.id), {
+                                runs_subscription: cat.id,
+                                transactions: updatedUser.transactions
+                            });
+                        } catch (err) {
+                            console.error("Subscription save failed:", err);
+                        }
+                    }
+                    onUpdate?.(updatedUser);
                     setActiveSubscription(cat.id);
                     setIsVerifying(false);
                 },
@@ -1775,6 +2382,31 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
             alert("Could not initialize payment. Please try again.");
             setIsVerifying(false);
         }
+    };
+
+    const handleExitSubscription = async () => {
+        if (!confirm("Are you sure you want to return to the Access Network hub?")) {
+            return;
+        }
+        setIsVerifying(true);
+        const updatedUser = {
+            ...(user || {}),
+            runs_subscription: null
+        };
+        if (user?.id) {
+            try {
+                await updateDoc(doc(db, 'profiles', user.id), {
+                    runs_subscription: null
+                });
+            } catch (err) {
+                console.error("Exit subscription failed:", err);
+                setIsVerifying(false);
+                return;
+            }
+        }
+        onUpdate?.(updatedUser);
+        setActiveSubscription(null);
+        setIsVerifying(false);
     };
 
     if (!isEnrolled) {
@@ -1793,7 +2425,7 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
                 </p>
                 <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 mb-10 w-full text-center">
                     <p className="text-yellow-600 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Network Access Fee</p>
-                    <p className="text-slate-900 text-3xl font-black tracking-tighter">{formatNaira(2000)}</p>
+                    <p className="text-slate-900 text-3xl font-black tracking-tighter">{formatNaira(fee)}</p>
                     <p className="text-slate-400 text-[9px] font-bold mt-2 uppercase">Verified entry to exclusive matching</p>
                 </div>
                 <div className="w-full space-y-3">
@@ -1843,41 +2475,99 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
 
             <div className="p-6">
                 {!activeSubscription ? (
-                    <div className="space-y-4">
-                        {categories.map((cat) => (
-                            <motion.div 
-                                key={cat.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="group relative overflow-hidden rounded-[2rem] border border-slate-200/60 shadow-xs bg-white active:scale-[0.98] transition-transform cursor-pointer"
-                                onClick={() => handleSubscribe(cat)}
-                            >
-                                <div className="p-6 flex items-center justify-between">
-                                    <div className="flex items-center gap-5">
-                                        <div className={cn(
-                                            "w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-md",
-                                            "bg-linear-to-tr", cat.color
-                                        )}>
-                                            {cat.icon}
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-black text-slate-900">{cat.label}</h3>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <div className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-black uppercase tracking-tighter">
-                                                    {cat.badge}
+                    <div className="space-y-8">
+                        {/* Select Premium Network Section */}
+                        <div>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Select Premium Network</h3>
+                                <span className="text-[10px] bg-yellow-50 text-yellow-600 px-2.5 py-1 rounded-full font-black uppercase tracking-widest border border-yellow-100">5 Available</span>
+                            </div>
+                            <div className="space-y-4">
+                                {categories.map((cat) => (
+                                    <motion.div 
+                                        key={cat.id}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="group relative overflow-hidden rounded-[2rem] border border-slate-200/60 shadow-xs bg-white active:scale-[0.98] transition-transform cursor-pointer hover:border-yellow-400 hover:shadow-md transition-all duration-300"
+                                        onClick={() => handleSubscribe(cat)}
+                                    >
+                                        <div className="p-6 flex items-center justify-between">
+                                            <div className="flex items-center gap-5">
+                                                <div className={cn(
+                                                    "w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-md",
+                                                    "bg-linear-to-tr", cat.color
+                                                )}>
+                                                    {cat.icon}
                                                 </div>
-                                                <span className="text-slate-300">•</span>
-                                                <p className="text-slate-400 text-[10px] font-bold">Verified Elite</p>
+                                                <div>
+                                                    <h3 className="text-lg font-black text-slate-900">{cat.label}</h3>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <div className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-black uppercase tracking-tighter">
+                                                            {cat.badge}
+                                                        </div>
+                                                        <span className="text-slate-300">•</span>
+                                                        <p className="text-slate-400 text-[10px] font-bold">Verified Elite</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-slate-900 font-black text-base">{formatNaira(cat.price)}</p>
+                                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">per month</p>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-slate-900 font-black text-base">{formatNaira(cat.price)}</p>
-                                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">per month</p>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Access Network Lounge (Awaiting Premium Placement) */}
+                        <div className="pt-6 border-t border-slate-200">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Access Lounge</h3>
+                                <span className="text-[9px] bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full font-black uppercase tracking-widest">Awaiting Network</span>
+                            </div>
+                            <p className="text-slate-400 text-[11px] font-medium leading-relaxed mb-4">
+                                These verified members have paid the network access fee but have not joined a premium network category yet.
+                            </p>
+
+                            <div className="grid grid-cols-1 gap-4">
+                                {accessOnlyMembers.map((member) => (
+                                    <motion.div 
+                                        key={member.id}
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:border-blue-200 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 shrink-0">
+                                                <img src={member.avatar} className="w-full h-full object-cover" loading="lazy" alt="" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5">
+                                                    <h4 className="text-sm font-black text-slate-900 leading-none truncate">{member.name}</h4>
+                                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0"></div>
+                                                </div>
+                                                <p className="text-[11px] text-slate-400 mt-1">{member.age} • {member.location}</p>
+                                                <div className="flex gap-2 mt-2">
+                                                     <div className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-[4px] text-[8px] font-black uppercase tracking-tighter">
+                                                         ACCESS PAID
+                                                     </div>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => setSelectedMember(member)}
+                                                className="bg-slate-900 text-white w-9 h-9 rounded-xl flex items-center justify-center shadow-md active:scale-90 transition-all shrink-0"
+                                            >
+                                                <MessageSquare size={16} />
+                                            </button>
+                                        </div>
+                                        <p className="mt-3 text-[11px] text-slate-400 font-medium leading-relaxed">
+                                            "{member.bio}"
+                                        </p>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 ) : (
                     <div className="space-y-6">
@@ -1907,7 +2597,7 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
                                     <p className="text-lg font-black leading-none">18</p>
                                 </div>
                                 <button 
-                                    onClick={() => setActiveSubscription(null)}
+                                    onClick={handleExitSubscription}
                                     className="bg-black/20 backdrop-blur-md px-4 py-3 rounded-2xl flex-none flex items-center justify-center text-white"
                                 >
                                     <LogOut size={18} />
@@ -1937,7 +2627,7 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
                                 >
                                     <div className="flex items-center gap-4">
                                         <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-50 border border-slate-100">
-                                            <img src={member.avatar} className="w-full h-full object-cover" alt="" />
+                                            <img src={member.avatar} className="w-full h-full object-cover" loading="lazy" alt="" />
                                         </div>
                                         <div className="flex-1">
                                             <div className="flex items-center gap-1.5">
@@ -1961,7 +2651,7 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
                                             <MessageSquare size={18} />
                                         </button>
                                     </div>
-                                    <p className="mt-3 text-[11px] text-slate-400 font-medium leading-relaxed italic">
+                                    <p className="mt-3 text-[11px] text-slate-400 font-medium leading-relaxed">
                                         "{member.bio}"
                                     </p>
                                 </motion.div>
@@ -1991,7 +2681,7 @@ const RunsPage = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => void
                             </div>
                             <div className="flex flex-col items-center text-center">
                                 <div className="w-24 h-24 rounded-3xl overflow-hidden border-4 border-slate-50 shadow-xl mb-6">
-                                    <img src={selectedMember.avatar} className="w-full h-full object-cover" alt="" />
+                                    <img src={selectedMember.avatar} className="w-full h-full object-cover" loading="lazy" alt="" />
                                 </div>
                                 <h3 className="text-2xl font-black text-slate-900 leading-none mb-2">Connect with {selectedMember.name}</h3>
                                 <p className="text-slate-400 text-xs font-medium max-w-xs">{selectedMember.location} Elite Network</p>
@@ -2054,7 +2744,7 @@ const KYCVerification = ({ user, onBack, onComplete }: { user: any, onBack: () =
                 <button onClick={onBack} className="p-3 bg-slate-100 rounded-2xl text-slate-400">
                     <ArrowLeft size={20} />
                 </button>
-                <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest italic">Identity Verification</h2>
+                <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">Identity Verification</h2>
             </div>
 
             <div className="p-8 space-y-10">
@@ -2063,7 +2753,7 @@ const KYCVerification = ({ user, onBack, onComplete }: { user: any, onBack: () =
                         <ShieldCheck size={28} />
                     </div>
                     <div>
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic leading-tight">Complete KYC</h3>
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase leading-tight">Complete KYC</h3>
                         <p className="text-slate-400 text-xs font-medium mt-2 leading-relaxed">To ensure community safety and enable higher transaction limits, please verify your identity.</p>
                     </div>
                 </header>
@@ -2114,7 +2804,7 @@ const KYCVerification = ({ user, onBack, onComplete }: { user: any, onBack: () =
 
                     <div className="bg-yellow-50 border border-yellow-100 rounded-[2rem] p-8 flex items-start gap-4">
                         <Lock size={20} className="text-yellow-600 shrink-0 mt-1" />
-                        <p className="text-xs text-navy-800 font-medium leading-relaxed italic">
+                        <p className="text-xs text-navy-800 font-medium leading-relaxed">
                             Your data is encrypted and handled according to Nigerian Data Protection Regulations (NDPR). We only use this to verify your identity.
                         </p>
                     </div>
@@ -2167,12 +2857,11 @@ const ProfileSettings = ({ user, onBack, onSave, onKYCClick }: { user: any, onBa
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            const { error } = await supabase
-                .from('profiles')
-                .update(formData as any)
-                .eq('id', user.id);
-            
-            if (error) throw error;
+            try {
+                await updateDoc(doc(db, 'profiles', user.id), formData as any);
+            } catch (dbErr) {
+                handleFirestoreError(dbErr, OperationType.UPDATE, `profiles/${user.id}`);
+            }
             onSave(formData);
             alert("Profile updated successfully!");
             onBack();
@@ -2192,7 +2881,7 @@ const ProfileSettings = ({ user, onBack, onSave, onKYCClick }: { user: any, onBa
                 <button onClick={onBack} className="p-3 bg-slate-100 rounded-2xl text-slate-400">
                     <ArrowLeft size={20} />
                 </button>
-                <h2 className="text-sm font-black text-slate-800 uppercase tracking-[0.2em] italic">Edit Profile</h2>
+                <h2 className="text-sm font-black text-slate-800 uppercase tracking-[0.2em]">Edit Profile</h2>
                 <button 
                     onClick={handleSave}
                     disabled={isSaving}
@@ -2353,7 +3042,7 @@ const ProfileSettings = ({ user, onBack, onSave, onKYCClick }: { user: any, onBa
                                 formData.is_active ? "bg-emerald-500" : "bg-slate-300"
                             )}></div>
                             <div>
-                                <p className="text-sm font-black text-slate-800 uppercase italic tracking-tight">Active Status</p>
+                                <p className="text-sm font-black text-slate-800 uppercase tracking-tight">Active Status</p>
                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Visibility on platform</p>
                             </div>
                         </div>
@@ -2388,11 +3077,11 @@ const ProfileView = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => v
         onComplete={async (data) => {
           // Update DB
           try {
-            const { error } = await supabase
-              .from('profiles')
-              .update(data as any)
-              .eq('id', user.id);
-            if (error) throw error;
+            try {
+              await updateDoc(doc(db, 'profiles', user.id), data as any);
+            } catch (dbErr) {
+              handleFirestoreError(dbErr, OperationType.UPDATE, `profiles/${user.id}`);
+            }
             onUpdate({ ...user, ...data });
             alert("Identity verified successfully!");
           } catch (err) {
@@ -2454,9 +3143,10 @@ const ProfileView = ({ user, onUpdate }: { user: any, onUpdate: (data: any) => v
             <div className="flex gap-2 mb-2">
                <button 
                 onClick={() => setIsEditing(true)}
-                className="px-5 py-1.5 bg-slate-50 font-bold text-[13px] rounded-full border border-slate-200 text-slate-800 shadow-xs hover:bg-slate-100 transition-colors"
+                className="px-4 py-1.5 bg-slate-50 font-bold text-[13px] rounded-full border border-slate-200 text-slate-800 shadow-xs hover:bg-slate-100 transition-colors flex items-center gap-1.5"
                >
-                  Profile
+                  <Settings size={14} className="text-slate-500" />
+                  Edit Profile
                </button>
                <button className="p-1.5 bg-slate-50 rounded-full border border-slate-200 text-slate-800 hover:bg-slate-100 transition-colors">
                   <MoreHorizontal size={20} />
@@ -2542,12 +3232,14 @@ const AdminDashboard = () => {
         const fetchPending = async () => {
             setLoading(true);
             try {
-                // In a real app, this would be: 
-                // const { data } = await supabase.from('profiles').select('*').eq('verification_status', 'pending');
-                const { data, error } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('verification_status', 'pending');
+                const q = query(collection(db, 'profiles'), where('verification_status', '==', 'pending'));
+                let querySnapshot;
+                try {
+                    querySnapshot = await getDocs(q);
+                } catch (dbErr) {
+                    handleFirestoreError(dbErr, OperationType.LIST, 'profiles');
+                }
+                const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
                 if (data && data.length > 0) {
                     setPendingCreators(data);
@@ -2559,7 +3251,7 @@ const AdminDashboard = () => {
                     ]);
                 }
             } catch (err) {
-                console.error("Failed to fetch pending creators");
+                console.error("Failed to fetch pending creators", err);
             } finally {
                 setLoading(false);
             }
@@ -2572,15 +3264,14 @@ const AdminDashboard = () => {
             const status = action === 'approve' ? 'approved' : 'rejected';
             const isVerified = action === 'approve';
             
-            const { error } = await supabase
-                .from('profiles')
-                .update({ 
+            try {
+                await updateDoc(doc(db, 'profiles', id), { 
                     verification_status: status, 
                     is_verified: isVerified 
-                } as any)
-                .eq('id', id);
-            
-            if (error) throw error;
+                });
+            } catch (dbErr) {
+                handleFirestoreError(dbErr, OperationType.UPDATE, `profiles/${id}`);
+            }
 
             setPendingCreators(prev => prev.filter(c => c.id !== id));
             alert(`Creator ${action}d successfully!`);
@@ -2596,7 +3287,7 @@ const AdminDashboard = () => {
         <div className="bg-white min-h-screen pb-20">
             <header className="p-8 border-b border-slate-100 flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-display font-black text-slate-900 tracking-tighter uppercase italic">Verification Desk</h2>
+                    <h2 className="text-3xl font-display font-black text-slate-900 tracking-tighter uppercase">Verification Desk</h2>
                     <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Pending Approval Requests</p>
                 </div>
                 <div className="bg-navy-800/10 text-yellow-600 px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-yellow-600/20">
@@ -2608,7 +3299,7 @@ const AdminDashboard = () => {
                 {loading ? (
                     <div className="py-20 text-center space-y-4 animate-pulse">
                         <div className="w-12 h-12 border-4 border-yellow-500/20 border-t-yellow-600 rounded-full mx-auto animate-spin"></div>
-                        <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest italic">Scanning Applications...</p>
+                        <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Scanning Applications...</p>
                     </div>
                 ) : pendingCreators.length === 0 ? (
                     <div className="py-32 text-center space-y-6">
@@ -2616,7 +3307,7 @@ const AdminDashboard = () => {
                            <ShieldCheck size={40} />
                         </div>
                         <div className="space-y-1">
-                            <h3 className="text-slate-900 font-black uppercase italic tracking-tight">System Clear</h3>
+                            <h3 className="text-slate-900 font-black uppercase tracking-tight">System Clear</h3>
                             <p className="text-slate-400 text-xs font-bold opacity-60">No pending creator requests found.</p>
                         </div>
                     </div>
@@ -2661,7 +3352,7 @@ const AdminDashboard = () => {
 
                             {creator.bio && (
                                 <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 relative z-10">
-                                    <p className="text-xs text-slate-500 font-medium italic leading-relaxed">"{creator.bio}"</p>
+                                    <p className="text-xs text-slate-500 font-medium leading-relaxed">"{creator.bio}"</p>
                                 </div>
                             )}
                         </motion.div>
@@ -2704,7 +3395,7 @@ const BecomeCreatorForm = ({ onComplete }: { onComplete: (data: any) => void }) 
                 <div className="w-20 h-20 bg-blue-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(37,99,235,0.2)] relative">
                     <ShieldCheck size={40} className="text-white relative z-10" />
                 </div>
-                <h2 className="text-4xl font-display font-black text-slate-900 tracking-tighter uppercase italic leading-none">Become an <span className="text-blue-500">Elite</span> Creator</h2>
+                <h2 className="text-4xl font-display font-black text-slate-900 tracking-tighter uppercase leading-none">Become an <span className="text-blue-500">Elite</span> Creator</h2>
                 <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Professional verification required</p>
             </header>
 
@@ -2729,7 +3420,7 @@ const BecomeCreatorForm = ({ onComplete }: { onComplete: (data: any) => void }) 
                     className="space-y-6"
                 >
                     <div className="text-center">
-                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest italic">Select Your Category</h3>
+                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Select Your Category</h3>
                     </div>
                     <div className="grid grid-cols-1 gap-4">
                         {categories.map(cat => (
@@ -2825,7 +3516,7 @@ const BecomeCreatorForm = ({ onComplete }: { onComplete: (data: any) => void }) 
                     className="space-y-8"
                 >
                     <div className="text-center space-y-3">
-                        <h3 className="text-lg font-display font-black text-slate-900 uppercase tracking-tighter italic">Identity Verification</h3>
+                        <h3 className="text-lg font-display font-black text-slate-900 uppercase tracking-tighter">Identity Verification</h3>
                         <p className="text-[10px] text-slate-400 font-medium px-12 leading-relaxed">Safety is our priority. Upload a clear photo of your government ID or official portfolio page for verification.</p>
                     </div>
 
@@ -2846,7 +3537,7 @@ const BecomeCreatorForm = ({ onComplete }: { onComplete: (data: any) => void }) 
                                 <BadgeCheck size={32} />
                              </div>
                              <div className="space-y-1">
-                                <p className="text-white font-black text-sm uppercase tracking-widest italic">Document Secured</p>
+                                <p className="text-white font-black text-sm uppercase tracking-widest">Document Secured</p>
                                 <p className="text-emerald-500 text-[9px] font-black uppercase tracking-widest">Tap to Replace</p>
                              </div>
                            </div>
@@ -2864,7 +3555,7 @@ const BecomeCreatorForm = ({ onComplete }: { onComplete: (data: any) => void }) 
                         <div className="w-10 h-10 bg-blue-600/20 text-blue-500 rounded-2xl flex items-center justify-center shrink-0">
                             <ShieldCheck size={24} />
                         </div>
-                        <p className="text-[10px] text-slate-400 font-medium leading-relaxed italic">
+                        <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
                             Your identity data is fully encrypted using bank-grade security protocols. 
                             <span className="text-blue-400"> Verification typically completes within 24 hours.</span>
                         </p>
@@ -2969,17 +3660,16 @@ const CreatorDashboard = ({ onUploadClick, user, onUpdateProfile }: { onUploadCl
   const handleApplyComplete = async (data: any) => {
     setIsRequesting(true);
     try {
-        const { error } = await supabase
-            .from('profiles')
-            .update({ 
+        try {
+            await updateDoc(doc(db, 'profiles', user.id), { 
                 verification_status: 'pending',
                 full_name: data.fullName,
                 bio: data.bio,
                 category: data.category
-            } as any)
-            .eq('id', user.id);
-        
-        if (error) throw error;
+            });
+        } catch (dbErr) {
+            handleFirestoreError(dbErr, OperationType.UPDATE, `profiles/${user.id}`);
+        }
         onUpdateProfile({ 
             ...user, 
             verification_status: 'pending',
@@ -3016,7 +3706,7 @@ const CreatorDashboard = ({ onUploadClick, user, onUpdateProfile }: { onUploadCl
   return (
     <div className="p-6 space-y-10 pb-20 bg-white min-h-screen">
       <div className="flex items-center justify-between">
-        <h2 className="text-4xl font-display font-black uppercase tracking-tighter italic text-slate-900">Creator Hub</h2>
+        <h2 className="text-4xl font-display font-black uppercase tracking-tighter text-slate-900">Creator Hub</h2>
         {user?.is_verified ? (
             <div className="bg-emerald-50 text-emerald-500 text-[10px] font-black px-4 py-1.5 rounded-xl uppercase tracking-widest border border-emerald-100 flex items-center gap-1.5">
                 <BadgeCheck size={14} className="fill-emerald-500 bg-white rounded-full p-0.5" />
@@ -3077,7 +3767,7 @@ const CreatorDashboard = ({ onUploadClick, user, onUpdateProfile }: { onUploadCl
                     <TrendingUp size={28} />
                  </div>
                  <div>
-                    <p className="text-base font-display font-black text-slate-900 italic tracking-tight">New Subscription</p>
+                    <p className="text-base font-display font-black text-slate-900 tracking-tight">New Subscription</p>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">@{['wiz_kid', 'davido_fan', 'tiwa_wa'][i-1]} • Level 1</p>
                  </div>
               </div>
@@ -3097,14 +3787,14 @@ const CreatorDashboard = ({ onUploadClick, user, onUpdateProfile }: { onUploadCl
       <div className="bg-white border border-slate-100 p-10 rounded-[2.5rem] relative overflow-hidden group shadow-sm">
          <div className="relative z-10">
             <div className="flex items-center justify-between mb-8">
-               <h3 className="font-black text-2xl italic tracking-tighter uppercase text-slate-900 scale-y-110">Withdrawal</h3>
+               <h3 className="font-black text-2xl tracking-tighter uppercase text-slate-900 scale-y-110">Withdrawal</h3>
                <span className="text-[9px] bg-blue-50 px-3 py-1.5 rounded-lg text-blue-500 font-black uppercase tracking-[0.25em] border border-blue-100">Instant Pay</span>
             </div>
             
             <div className="bg-slate-50 p-6 rounded-[1.5rem] border border-slate-100 mb-10 flex items-center gap-5 group-hover:bg-slate-100 transition-colors">
-                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center font-black italic text-white shadow-lg">UBA</div>
+                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center font-black text-white shadow-lg">UBA</div>
                 <div className="flex-1">
-                    <p className="text-md font-bold text-slate-900 tracking-tight uppercase italic">United Bank for Africa</p>
+                    <p className="text-md font-bold text-slate-900 tracking-tight uppercase">United Bank for Africa</p>
                     <p className="text-[10px] text-slate-400 font-black tracking-[0.2em] uppercase mt-1">**** 5821 • ELITE SAVINGS</p>
                 </div>
             </div>
@@ -3138,31 +3828,110 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
 
+  // AI Recommendation States
+  const [subscriptions, setSubscriptions] = useState<string[]>(['@pokepetit...']);
+  const [viewingHistory, setViewingHistory] = useState<string[]>([]);
+  const [recommendations, setRecommendations] = useState<any>(null);
+  const [isRecsLoading, setIsRecsLoading] = useState<boolean>(false);
+
+  const handleCreatorFollowed = (username: string) => {
+    setSubscriptions((prev) => {
+      if (prev.includes(username)) {
+        return prev.filter((u) => u !== username);
+      } else {
+        return [...prev, username];
+      }
+    });
+  };
+
+  const handlePostViewed = (id: string) => {
+    setViewingHistory((prev) => {
+      if (prev.includes(id)) return prev;
+      return [...prev, id];
+    });
+  };
+
+  // Fetch AI Recommendations based on viewing history, subscriptions, and stated interests (Debounced)
+  useEffect(() => {
+    let active = true;
+    
+    const timer = setTimeout(() => {
+      const fetchRecommendations = async () => {
+        setIsRecsLoading(true);
+        try {
+          const response = await fetch('/api/recommendations', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              viewingHistory,
+              subscriptions,
+              interests: currentUser?.interests || [],
+              allPosts: CENTRAL_POSTS,
+              allCreators: CENTRAL_CREATORS
+            })
+          });
+          if (!response.ok) {
+            throw new Error('Failed to fetch recommendations');
+          }
+          const data = await response.json();
+          if (active) {
+            setRecommendations(data);
+          }
+        } catch (err) {
+          console.error("AI Recommendation fetch error:", err);
+        } finally {
+          if (active) {
+            setIsRecsLoading(false);
+          }
+        }
+      };
+
+      fetchRecommendations();
+    }, 1500); // 1.5 seconds debounce to prevent 429 quota exhaustion on fast toggles/clicks
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [viewingHistory, subscriptions, currentUser?.interests]);
+
+  // Check if we are inside an OAuth popup window and close if so
+  useEffect(() => {
+    if (window.opener && window.opener !== window) {
+      console.log("OAuth popup detected in App. Sending postMessage and closing...");
+      try {
+        window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS' }, window.location.origin);
+      } catch (err) {
+        console.error("Failed to postMessage to opener:", err);
+      }
+      window.close();
+    }
+  }, []);
+
   useEffect(() => {
     console.log("SINCODE: App Mounting...");
-    // Check active session on load
-    const checkSession = async () => {
-      // Safety timeout to ensure app eventually loads even if Supabase is slow/failing
-      const timeout = setTimeout(() => {
-        setIsLoading(false);
-      }, 5000);
-
-      try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error("Session error:", sessionError);
-        } else if (session) {
-          // Fetch profile data
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+    
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log("Firebase Auth state change:", !!user);
+      if (user) {
+        setIsLoggedIn(true);
+        setIsLoading(true);
+        try {
+          // Fetch profile data from Firestore
+          let profileSnap;
+          try {
+            profileSnap = await getDoc(doc(db, 'profiles', user.uid));
+          } catch (dbErr) {
+            handleFirestoreError(dbErr, OperationType.GET, `profiles/${user.uid}`);
+          }
           
-          if (profile) {
+          if (profileSnap.exists()) {
+            const profile = profileSnap.data();
             // Ensure wallet exists and inject demo funds requested by user
             const profileWithWallet = {
+                id: user.uid,
                 ...profile,
                 balance: (profile.balance || 0) + 100000,
                 transactions: [
@@ -3179,85 +3948,44 @@ export default function App() {
                 monnify_account: profile.monnify_account || null
             };
             setCurrentUser(profileWithWallet);
-            setIsLoggedIn(true);
-          } else if (error) {
-            console.error("Profile error:", error);
-          }
-        }
-      } catch (err) {
-        console.error("Auth check failed:", err);
-      } finally {
-        clearTimeout(timeout);
-        setIsLoading(false);
-      }
-    };
-
-    checkSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log("Auth event:", _event, !!session);
-      if (session) {
-        setIsLoggedIn(true); // Set logged in immediately once session is detected
-        
-        try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (profile) {
-            setCurrentUser({
-                ...profile,
-                balance: (profile.balance || 0) + 100000,
-                transactions: [
-                    {
-                        id: `DEMO-AUTH-${Date.now()}`,
-                        type: 'funding',
-                        amount: 100000,
-                        description: 'Demo Account Credit (Login)',
-                        date: new Date().toISOString(),
-                        status: 'success'
-                    },
-                    ...(profile.transactions || [])
-                ],
-                monnify_account: profile.monnify_account || null
-            });
           } else {
             // Fallback for user without a profile in the DB yet
-            setCurrentUser({
-              id: session.user.id,
-              name: session.user.user_metadata?.name || 'New User',
-              username: session.user.user_metadata?.username || '@user',
-              email: session.user.email,
+            const fallbackProfile = {
+              id: user.uid,
+              name: user.displayName || 'New User',
+              username: 'user_' + user.uid.substring(0, 8),
+              email: user.email,
               balance: 0,
               transactions: [],
               monnify_account: null
-            });
+            };
+            setCurrentUser(fallbackProfile);
           }
         } catch (err) {
           console.error("Profile sync error:", err);
           // Still logged in, just using fallback data
           setCurrentUser({
-            id: session.user.id,
-            name: 'User',
-            email: session.user.email,
+            id: user.uid,
+            name: user.displayName || 'User',
+            email: user.email,
             balance: 0,
             transactions: []
           });
+        } finally {
+          setIsLoading(false);
         }
       } else {
         setCurrentUser(null);
         setIsLoggedIn(false);
+        setIsLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut(auth);
     setIsLoggedIn(false);
     setCurrentUser(null);
   };
@@ -3293,11 +4021,60 @@ export default function App() {
     );
   }
 
+  const isProfileIncomplete = isLoggedIn && currentUser && (
+    !currentUser.username || 
+    currentUser.username === '@user' || 
+    currentUser.username.startsWith('user_') || 
+    currentUser.username.startsWith('@user_') || 
+    !currentUser.state
+  );
+
   if (!isLoggedIn) {
     return <AuthPage onLogin={(user) => {
       setCurrentUser(user);
       setIsLoggedIn(true);
     }} />;
+  }
+
+  if (isLoggedIn && isProfileIncomplete) {
+    return (
+      <UpdateProfilePage 
+        user={currentUser} 
+        onComplete={async (updatedFields) => {
+          try {
+            const profileDoc = {
+              id: currentUser.id,
+              email: currentUser.email,
+              name: updatedFields.name,
+              username: updatedFields.username,
+              phone: updatedFields.phone,
+              dob: updatedFields.dob || "",
+              gender: updatedFields.gender,
+              state: updatedFields.state,
+              location: `${updatedFields.state}, Nigeria`,
+              interests: updatedFields.interests || []
+            };
+            try {
+              await setDoc(doc(db, 'profiles', currentUser.id), profileDoc, { merge: true });
+            } catch (dbErr) {
+              handleFirestoreError(dbErr, OperationType.CREATE, `profiles/${currentUser.id}`);
+            }
+
+            const profileWithWallet = {
+              ...currentUser,
+              ...profileDoc,
+              balance: (currentUser.balance || 0) + 100000,
+              transactions: currentUser.transactions || []
+            };
+            setCurrentUser(profileWithWallet);
+          } catch (error) {
+            console.error("Failed to complete profile registration:", error);
+            throw error;
+          }
+        }} 
+        onLogout={handleLogout} 
+      />
+    );
   }
 
   return (
@@ -3427,6 +4204,12 @@ export default function App() {
                     setActiveTab('create');
                     setIsUploading(true);
                 }} 
+                subscriptions={subscriptions}
+                onCreatorFollowed={handleCreatorFollowed}
+                viewingHistory={viewingHistory}
+                onPostViewed={handlePostViewed}
+                recommendations={recommendations}
+                isRecsLoading={isRecsLoading}
               />
             </motion.div>
           )}
@@ -3546,19 +4329,37 @@ export default function App() {
             </motion.div>
           )}
 
+          {activeTab === 'discover' && (
+            <motion.div
+              key="discover"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <ExplorePage
+                user={currentUser}
+                onUpdate={(updated) => setCurrentUser(updated)}
+                subscriptions={subscriptions}
+                onCreatorFollowed={handleCreatorFollowed}
+                viewingHistory={viewingHistory}
+                onPostViewed={handlePostViewed}
+                recommendations={recommendations}
+                isRecsLoading={isRecsLoading}
+              />
+            </motion.div>
+          )}
+
           {/* Placeholder for tabs without content yet */}
-          {['discover', 'messages', 'notifications'].includes(activeTab) && (
+          {['messages', 'notifications'].includes(activeTab) && (
             <div className="h-[75vh] flex flex-col items-center justify-center p-8 text-center bg-white">
                <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center mb-6 text-blue-400">
-                  {activeTab === 'discover' ? <Search size={32} /> : activeTab === 'messages' ? <MessageSquare size={32} /> : <Bell size={32} />}
+                  {activeTab === 'messages' ? <MessageSquare size={32} /> : <Bell size={32} />}
                </div>
                <h3 className="text-lg font-bold text-slate-800 mb-1">
-                 {activeTab === 'discover' ? 'Explore Content' : activeTab === 'messages' ? 'Your Messages' : 'Alerts & Activity'}
+                 {activeTab === 'messages' ? 'Your Messages' : 'Alerts & Activity'}
                </h3>
                <p className="text-slate-400 text-xs max-w-[180px] leading-relaxed font-medium">
-                 {activeTab === 'discover' 
-                   ? 'Searching for the most engaging Nigerian creators...' 
-                   : activeTab === 'messages' 
+                 {activeTab === 'messages' 
                    ? 'Connect directly with fans and creators through SINCODE.'
                    : 'Stay updated with your latest tips, subs, and creator syncs.'}
                </p>
@@ -3568,6 +4369,7 @@ export default function App() {
       </main>
 
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} setIsUploading={setIsUploading} />
+      <DesktopSidebar activeTab={activeTab} setActiveTab={setActiveTab} setIsUploading={setIsUploading} />
     </div>
   );
 }

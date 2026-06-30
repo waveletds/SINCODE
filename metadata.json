@@ -8,6 +8,7 @@
   "majorCapabilities": [
     "AI moderation",
     "Naira payouts",
-    "Subscription management"
+    "Subscription management",
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
 }
